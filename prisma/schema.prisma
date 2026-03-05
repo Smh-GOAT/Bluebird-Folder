@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model VideoHistory {
+  id                     String   @id @default(uuid())
+  userId                 String   @map("user_id")
+  folderId               String?  @map("folder_id")
+  videoId                String   @map("video_id")
+  videoUrl               String   @map("video_url")
+  title                  String
+  platform               String
+  summaryJson            Json?    @map("summary_json")
+  summaryMarkdown        String?  @map("summary_markdown")
+  subtitlesArray         Json?    @map("subtitles_array")
+  originalSubtitlesArray Json?    @map("original_subtitles_array")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("video_histories")
+  @@index([userId, createdAt])
+  @@index([folderId, createdAt])
+}
+
+model UserPreference {
+  id                    String   @id @default(uuid())
+  userId                String   @unique @map("user_id")
+  defaultOutputLanguage String   @default("zh") @map("default_output_language")
+  defaultShowTimestamp  Boolean  @default(false) @map("default_show_timestamp")
+  defaultShowEmoji      Boolean  @default(true) @map("default_show_emoji")
+  defaultEnableStream   Boolean  @default(true) @map("default_enable_stream")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("user_preferences")
+}
+
+model SummaryTemplate {
+  id             String   @id @default(uuid())
+  userId         String?  @map("user_id")
+  name           String
+  description    String?
+  promptTemplate String   @map("prompt_template")
+  config         Json?
+  isBuiltin      Boolean  @default(false) @map("is_builtin")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("summary_templates")
+}
+
+model Folder {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("folders")
+  @@unique([userId, name])
+  @@index([userId, createdAt])
+}
