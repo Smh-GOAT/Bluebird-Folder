@@ -22,10 +22,10 @@ export function ExportActions() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <button
         type="button"
-        className="ui-btn-primary px-4 py-2 text-sm"
+        className="ui-btn-primary px-3 py-1.5 text-sm"
         onClick={() => copyText(mockSummaryMarkdown, "Markdown")}
       >
         <span className="flex items-center gap-1.5">
@@ -44,7 +44,7 @@ export function ExportActions() {
       <div className="relative">
         <button
           type="button"
-          className="ui-btn-secondary px-3 py-2 text-sm"
+          className="ui-btn-secondary px-2.5 py-1.5 text-sm"
           onClick={() => setShowDropdown((prev) => !prev)}
         >
           <span className="flex items-center gap-1">

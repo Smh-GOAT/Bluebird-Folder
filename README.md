@@ -1,4 +1,4 @@
-# BibiGPT Rebuild (Milestone 0.6)
+# Bluebird Folder (Milestone 1)
 
 ## 运行
 
@@ -20,11 +20,17 @@ cp .env.example .env.local
 npm run dev
 ```
 
-4. 健康检查
+4. 安装 Python 依赖（Bilibili 下载 + 音频提取）
+
+```bash
+pip install -r scripts/requirements.txt
+```
+
+5. 健康检查
 
 访问 `http://localhost:3000/api/health`
 
-## 当前完成
+## Milestone 1 当前完成
 
 - Next.js + TypeScript + Tailwind 基础骨架
 - Supabase 客户端封装（浏览器/服务端/中间件）
@@ -43,3 +49,14 @@ npm run dev
   - `GET /api/history`
   - `POST /api/history/:id/move`
 - Prisma schema 增补（`Folder` 与 `VideoHistory.folderId`）
+- Bilibili 链接解析接口（M1）：
+  - `POST /api/video/parse`
+  - 输出：视频元信息 + 是否有原生字幕
+- 字幕获取接口（M1）：
+  - `POST /api/transcript/fetch`
+  - 逻辑：原生字幕优先，缺失时触发 Python 下载与 Qwen3-ASR
+- Python 下载管线（M1）：
+  - `scripts/bilibili_downloader.py`（`yt-dlp + ffmpeg + moviepy`）
+- 运行配置覆盖（M1）：
+  - `GET/POST /api/settings/runtime`
+  - `/settings` 可覆盖 Bilibili Cookie / User-Agent（服务端优先读取覆盖值，缺失回退 `.env`）
