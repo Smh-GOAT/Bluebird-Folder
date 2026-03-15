@@ -30,6 +30,9 @@ def download_video(url, user_agent, cookie):
         "merge_output_format": "mp4",
         "quiet": True,
         "noplaylist": True,
+        "socket_timeout": 300,
+        "retries": 3,
+        "fragment_retries": 3,
         "http_headers": {
             "Referer": "https://www.bilibili.com/",
             "User-Agent": user_agent,
@@ -38,9 +41,22 @@ def download_video(url, user_agent, cookie):
     if cookie:
         ydl_opts["http_headers"]["Cookie"] = cookie
 
-    with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        file_path = ydl.prepare_filename(info)
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            file_path = ydl.prepare_filename(info)
+    except Exception as e:
+        error_msg = str(e)
+        if "Failed to parse site" in error_msg:
+            raise RuntimeError("Bilibili 解析失败：无法识别该视频链接，请检查链接是否有效或更新 yt-dlp 版本")
+        elif "unavailable" in error_msg.lower() or "not available" in error_msg.lower():
+            raise RuntimeError("该视频可能已被删除或需要登录才能访问")
+        elif "forbidden" in error_msg.lower() or "403" in error_msg:
+            raise RuntimeError("访问被拒绝：Cookie 可能已过期，请在设置页更新 Bilibili Cookie")
+        elif "timeout" in error_msg.lower():
+            raise RuntimeError("下载超时：网络连接不稳定，请稍后重试")
+        else:
+            raise RuntimeError(f"下载失败：{error_msg}")
 
     merged_path = Path(file_path)
     if merged_path.suffix.lower() != ".mp4":
@@ -55,7 +71,7 @@ def download_video(url, user_agent, cookie):
                 break
 
     if not merged_path.exists():
-        raise RuntimeError("merged mp4 not found")
+        raise RuntimeError("视频下载成功但找不到文件")
 
     audio_path = work_dir / "audio.mp3"
     clip = VideoFileClip(str(merged_path))

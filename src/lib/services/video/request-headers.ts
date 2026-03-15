@@ -12,3 +12,15 @@ export function buildBilibiliHeaders() {
   }
   return headers;
 }
+
+export function buildXiaohongshuHeaders() {
+  const config = getRuntimeConfig();
+  const headers: Record<string, string> = {
+    "User-Agent": config.xiaohongshuUserAgent,
+    Referer: "https://www.xiaohongshu.com/"
+  };
+  if (config.xiaohongshuCookie) {
+    headers.Cookie = config.xiaohongshuCookie;
+  }
+  return headers;
+}

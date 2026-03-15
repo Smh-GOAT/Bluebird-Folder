@@ -93,6 +93,22 @@ export function listHistories(folderId?: string) {
   return histories.filter((item) => item.folderId === folderId);
 }
 
+export function getHistoryById(id: string) {
+  return getStore().histories.find((item) => item.id === id) ?? null;
+}
+
+export function saveHistory(history: VideoHistoryItem) {
+  const store = getStore();
+  const existedIndex = store.histories.findIndex((item) => item.id === history.id);
+  if (existedIndex >= 0) {
+    store.histories[existedIndex] = history;
+    return store.histories[existedIndex];
+  }
+
+  store.histories.unshift(history);
+  return history;
+}
+
 export function moveHistoryToFolder(historyId: string, folderId: string | null) {
   const store = getStore();
   const history = store.histories.find((item) => item.id === historyId);

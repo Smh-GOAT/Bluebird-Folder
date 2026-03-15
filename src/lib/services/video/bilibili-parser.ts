@@ -48,6 +48,12 @@ export function parseBilibiliIdentity(inputUrl: string): BilibiliIdentity {
   throw new Error("无法从链接中解析 Bilibili 视频 ID");
 }
 
+function parsePageNumber(inputUrl: string): number {
+  const normalized = decodeURIComponent(inputUrl.trim());
+  const pageMatch = normalized.match(/[?&]p=(\d+)/);
+  return pageMatch ? parseInt(pageMatch[1], 10) : 1;
+}
+
 async function resolveShortLinkIfNeeded(inputUrl: string) {
   if (!inputUrl.includes("b23.tv")) {
     return inputUrl;
@@ -86,6 +92,7 @@ export interface BilibiliParsedResult {
 export async function fetchBilibiliMeta(url: string, headers: Record<string, string>) {
   const resolvedUrl = await resolveShortLinkIfNeeded(url);
   const identity = parseBilibiliIdentity(resolvedUrl);
+  const pageNumber = parsePageNumber(resolvedUrl);
   const apiUrl = buildViewApiUrl(identity);
 
   const result = await requestJson<BilibiliViewApiResponse>(apiUrl, {
@@ -97,8 +104,10 @@ export async function fetchBilibiliMeta(url: string, headers: Record<string, str
     throw new Error(result.message || "Bilibili 元信息接口返回异常");
   }
 
-  const firstPage = result.data.pages?.[0];
-  if (!firstPage) {
+  const pages = result.data.pages || [];
+  const targetPage = pages.find((p) => p.page === pageNumber) || pages[0];
+  
+  if (!targetPage) {
     throw new Error("视频分页信息缺失");
   }
 
@@ -107,11 +116,11 @@ export async function fetchBilibiliMeta(url: string, headers: Record<string, str
     videoId: result.data.bvid,
     title: result.data.title,
     author: result.data.owner.name,
-    duration: result.data.duration,
+    duration: targetPage.duration,
     publishAt: new Date(result.data.pubdate * 1000).toISOString(),
     viewCount: result.data.stat?.view,
     likeCount: result.data.stat?.like,
-    pages: (result.data.pages || []).map((page) => ({
+    pages: pages.map((page) => ({
       cid: page.cid,
       title: page.part,
       duration: page.duration,
@@ -123,6 +132,6 @@ export async function fetchBilibiliMeta(url: string, headers: Record<string, str
     meta,
     bvid: result.data.bvid,
     aid: result.data.aid,
-    cid: firstPage.cid
+    cid: targetPage.cid
   } satisfies BilibiliParsedResult;
 }

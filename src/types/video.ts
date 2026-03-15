@@ -1,4 +1,7 @@
-export type VideoPlatform = "bilibili" | "youtube";
+import type { SummaryStructured } from "./summary";
+import type { SubtitleTranslation } from "./translation";
+
+export type VideoPlatform = "bilibili" | "youtube" | "xiaohongshu";
 
 export interface SubtitleSegment {
   start: number;
@@ -12,6 +15,22 @@ export interface VideoHistoryItem {
   platform: VideoPlatform;
   createdAt: string;
   folderId?: string | null;
+  videoId?: string;
+  videoUrl?: string;
+  author?: string;
+  duration?: number;
+  publishAt?: string;
+  subtitleSource?: SubtitleSource;
+  subtitlesArray?: SubtitleSegment[];
+  translatedSubtitles?: SubtitleTranslation[];
+  translationMeta?: {
+    sourceLanguage: string;
+    targetLanguage: string;
+    translatedAt: string;
+  };
+  fullText?: string;
+  summaryMarkdown?: string | null;
+  summaryJson?: SummaryStructured | null;
 }
 
 export interface FolderItem {
@@ -66,4 +85,5 @@ export interface TranscriptFetchResponseData {
   subtitleSource: SubtitleSource;
   segments: SubtitleSegment[];
   fullText: string;
+  historyId?: string;
 }

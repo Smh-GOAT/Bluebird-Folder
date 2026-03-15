@@ -26,30 +26,52 @@ export async function transcribeByQwen3Asr(audioPath: string) {
   }
 
   const fileBuffer = await readFile(audioPath);
-  const fileName = path.basename(audioPath);
-  const form = new FormData();
-  const blob = new Blob([fileBuffer], { type: "audio/mpeg" });
-  form.append("file", blob, fileName);
-  form.append("model", config.qwenAsrModel);
+  const ext = path.extname(audioPath).toLowerCase();
+  const mimeType = ext === ".wav" ? "audio/wav" : "audio/mpeg";
+  const dataUri = `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
 
   const response = await fetch(config.qwenAsrBaseUrl, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${config.qwenAsrApiKey}`
+      Authorization: `Bearer ${config.qwenAsrApiKey}`,
+      "Content-Type": "application/json"
     },
-    body: form
+    body: JSON.stringify({
+      model: config.qwenAsrModel,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_audio",
+              input_audio: {
+                data: dataUri
+              }
+            }
+          ]
+        }
+      ],
+      stream: false,
+      asr_options: {
+        enable_itn: false
+      }
+    })
   });
 
   if (!response.ok) {
-    throw new Error(`Qwen3-ASR 请求失败: ${response.status}`);
+    const details = await response.text();
+    throw new Error(`Qwen3-ASR 请求失败: ${response.status}${details ? ` - ${details.slice(0, 240)}` : ""}`);
   }
 
   const result = (await response.json()) as {
-    text?: string;
-    output?: { text?: string };
+    choices?: Array<{
+      message?: {
+        content?: string;
+      };
+    }>;
   };
 
-  const fullText = result.text || result.output?.text || "";
+  const fullText = result.choices?.[0]?.message?.content || "";
   if (!fullText.trim()) {
     throw new Error("Qwen3-ASR 返回空文本");
   }

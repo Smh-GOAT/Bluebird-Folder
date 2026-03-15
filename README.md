@@ -1,4 +1,4 @@
-# Bluebird Folder (Milestone 1)
+# Bluebird Folder (Milestone 2)
 
 ## 运行
 
@@ -30,7 +30,7 @@ pip install -r scripts/requirements.txt
 
 访问 `http://localhost:3000/api/health`
 
-## Milestone 1 当前完成
+## Milestone 2 当前完成
 
 - Next.js + TypeScript + Tailwind 基础骨架
 - Supabase 客户端封装（浏览器/服务端/中间件）
@@ -60,3 +60,12 @@ pip install -r scripts/requirements.txt
 - 运行配置覆盖（M1）：
   - `GET/POST /api/settings/runtime`
   - `/settings` 可覆盖 Bilibili Cookie / User-Agent（服务端优先读取覆盖值，缺失回退 `.env`）
+- 历史持久化与回看（M2）：
+  - `POST /api/history`：保存解析结果到历史
+  - `GET /api/history/[id]`：按 ID 拉取历史详情
+  - `POST /api/transcript/fetch` 成功后自动保存历史并返回 `historyId`
+- 总结页真实数据回看（M2）：
+  - `/summary/[id]` 按 `historyId` 加载真实字幕与视频信息（总结区暂为 mock 占位）
+- 平台可插拔扩展（M2）：
+  - 新增平台解析抽象 `PlatformParser`
+  - 支持小红书链接（`xiaohongshu.com / xhslink.com`）的 mock 解析与转写演示链路

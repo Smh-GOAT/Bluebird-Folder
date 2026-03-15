@@ -5,14 +5,18 @@ import { getRuntimeConfig, setRuntimeConfig } from "@/lib/server/runtime-config-
 
 const updateSchema = z.object({
   bilibiliCookie: z.string().optional(),
-  bilibiliUserAgent: z.string().optional()
+  bilibiliUserAgent: z.string().optional(),
+  xiaohongshuCookie: z.string().optional(),
+  xiaohongshuUserAgent: z.string().optional()
 });
 
 export async function GET() {
   const runtime = getRuntimeConfig();
   return successResponse({
     bilibiliCookie: runtime.bilibiliCookie,
-    bilibiliUserAgent: runtime.bilibiliUserAgent
+    bilibiliUserAgent: runtime.bilibiliUserAgent,
+    xiaohongshuCookie: runtime.xiaohongshuCookie,
+    xiaohongshuUserAgent: runtime.xiaohongshuUserAgent
   });
 }
 
@@ -23,7 +27,9 @@ export async function POST(request: Request) {
     const runtime = getRuntimeConfig();
     return successResponse({
       bilibiliCookie: runtime.bilibiliCookie,
-      bilibiliUserAgent: runtime.bilibiliUserAgent
+      bilibiliUserAgent: runtime.bilibiliUserAgent,
+      xiaohongshuCookie: runtime.xiaohongshuCookie,
+      xiaohongshuUserAgent: runtime.xiaohongshuUserAgent
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

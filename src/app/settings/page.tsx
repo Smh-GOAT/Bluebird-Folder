@@ -7,13 +7,17 @@ interface RuntimeConfigResponse {
   data: {
     bilibiliCookie: string;
     bilibiliUserAgent: string;
+    xiaohongshuCookie: string;
+    xiaohongshuUserAgent: string;
   };
   message: string;
 }
 
 export default function SettingsPage() {
-  const [cookie, setCookie] = useState("");
-  const [userAgent, setUserAgent] = useState("");
+  const [biliCookie, setBiliCookie] = useState("");
+  const [biliUserAgent, setBiliUserAgent] = useState("");
+  const [xhsCookie, setXhsCookie] = useState("");
+  const [xhsUserAgent, setXhsUserAgent] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -21,8 +25,10 @@ export default function SettingsPage() {
       const response = await fetch("/api/settings/runtime", { cache: "no-store" });
       const result = (await response.json()) as RuntimeConfigResponse;
       if (result.code === 0) {
-        setCookie(result.data.bilibiliCookie);
-        setUserAgent(result.data.bilibiliUserAgent);
+        setBiliCookie(result.data.bilibiliCookie);
+        setBiliUserAgent(result.data.bilibiliUserAgent);
+        setXhsCookie(result.data.xiaohongshuCookie);
+        setXhsUserAgent(result.data.xiaohongshuUserAgent);
       }
     }
     load().catch(() => {
@@ -36,8 +42,10 @@ export default function SettingsPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        bilibiliCookie: cookie,
-        bilibiliUserAgent: userAgent
+        bilibiliCookie: biliCookie,
+        bilibiliUserAgent: biliUserAgent,
+        xiaohongshuCookie: xhsCookie,
+        xiaohongshuUserAgent: xhsUserAgent
       })
     });
     const result = (await response.json()) as RuntimeConfigResponse;
@@ -61,15 +69,34 @@ export default function SettingsPage() {
 
         <label className="mt-4 block text-xs font-medium text-zinc-700">User-Agent</label>
         <textarea
-          value={userAgent}
-          onChange={(e) => setUserAgent(e.target.value)}
+          value={biliUserAgent}
+          onChange={(e) => setBiliUserAgent(e.target.value)}
           className="mt-1 h-24 w-full rounded-lg border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-zinc-400"
         />
 
         <label className="mt-4 block text-xs font-medium text-zinc-700">Cookie</label>
         <textarea
-          value={cookie}
-          onChange={(e) => setCookie(e.target.value)}
+          value={biliCookie}
+          onChange={(e) => setBiliCookie(e.target.value)}
+          className="mt-1 h-28 w-full rounded-lg border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-zinc-400"
+        />
+      </section>
+
+      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-4">
+        <h2 className="text-sm font-semibold text-zinc-900">小红书访问头覆盖（Milestone 2）</h2>
+        <p className="mt-1 text-xs text-zinc-500">用于真实解析与下载链路，建议填写有效登录态 Cookie。</p>
+
+        <label className="mt-4 block text-xs font-medium text-zinc-700">User-Agent</label>
+        <textarea
+          value={xhsUserAgent}
+          onChange={(e) => setXhsUserAgent(e.target.value)}
+          className="mt-1 h-24 w-full rounded-lg border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-zinc-400"
+        />
+
+        <label className="mt-4 block text-xs font-medium text-zinc-700">Cookie</label>
+        <textarea
+          value={xhsCookie}
+          onChange={(e) => setXhsCookie(e.target.value)}
           className="mt-1 h-28 w-full rounded-lg border border-zinc-200 px-3 py-2 text-xs outline-none focus:border-zinc-400"
         />
 

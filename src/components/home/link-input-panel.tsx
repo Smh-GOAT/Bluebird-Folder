@@ -20,15 +20,28 @@ export function LinkInputPanel({ centered = false, onParsed }: LinkInputPanelPro
   const [parsedData, setParsedData] = useState<ParseVideoResponseData | null>(null);
   const [segments, setSegments] = useState<SubtitleSegment[]>([]);
   const [subtitleSource, setSubtitleSource] = useState<"native" | "asr" | null>(null);
+  const [historyId, setHistoryId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [openModal, setOpenModal] = useState(false);
 
-  const canParse = useMemo(() => url.includes("bilibili.com") || url.includes("b23.tv"), [url]);
+  const canParse = useMemo(
+    () =>
+      url.includes("bilibili.com") ||
+      url.includes("b23.tv") ||
+      url.includes("xiaohongshu.com") ||
+      url.includes("xhslink.com"),
+    [url]
+  );
 
   const handleParse = async () => {
     setIsLoading(true);
     setErrorMessage("");
+    setParsedData(null);
+    setSegments([]);
+    setSubtitleSource(null);
+    setHistoryId(null);
+
     try {
       const parseResponse = await fetch("/api/video/parse", {
         method: "POST",
@@ -61,10 +74,12 @@ export function LinkInputPanel({ centered = false, onParsed }: LinkInputPanelPro
       }
       setSegments(transcriptResult.data.segments);
       setSubtitleSource(transcriptResult.data.subtitleSource);
+      setHistoryId(transcriptResult.data.historyId ?? null);
     } catch (error) {
       setParsedData(null);
       setSegments([]);
       setSubtitleSource(null);
+      setHistoryId(null);
       setErrorMessage(error instanceof Error ? error.message : "解析失败");
     } finally {
       setIsLoading(false);
@@ -99,7 +114,9 @@ export function LinkInputPanel({ centered = false, onParsed }: LinkInputPanelPro
         </div>
 
         {!canParse && url ? (
-          <p className="mt-3 text-center text-xs text-amber-700">Milestone 1 当前仅支持 bilibili.com / b23.tv 链接</p>
+          <p className="mt-3 text-center text-xs text-amber-700">
+            Milestone 2 当前支持 bilibili.com / b23.tv / xiaohongshu.com / xhslink.com 链接
+          </p>
         ) : null}
 
         {errorMessage ? <p className="mt-3 text-xs text-rose-600">{errorMessage}</p> : null}
@@ -115,7 +132,7 @@ export function LinkInputPanel({ centered = false, onParsed }: LinkInputPanelPro
               {segments.length}
             </p>
             <p className="mt-2 text-xs text-zinc-500">
-              半自动流程：解析完成后由你点击“生成总结”才触发生成并入库。
+              半自动流程：解析完成后由你点击「生成总结」才触发生成并入库。
             </p>
             {segments.length ? (
               <div className="mt-3 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-2">
@@ -130,7 +147,7 @@ export function LinkInputPanel({ centered = false, onParsed }: LinkInputPanelPro
               type="button"
               onClick={() => setOpenModal(true)}
               className="ui-btn-primary mt-4 px-6 py-2.5"
-              disabled={!segments.length}
+              disabled={!segments.length || !historyId}
             >
               生成总结
             </button>
@@ -142,13 +159,15 @@ export function LinkInputPanel({ centered = false, onParsed }: LinkInputPanelPro
         open={openModal}
         onClose={() => setOpenModal(false)}
         onConfirm={(values) => {
-          const id = createDemoId();
+          const id = historyId ?? createDemoId();
           const query = new URLSearchParams({
             template: values.template,
             language: values.language,
             detail: values.detail,
             showTimestamp: String(values.showTimestamp),
-            showEmoji: String(values.showEmoji)
+            showEmoji: String(values.showEmoji),
+            translateSubtitles: String(values.translateSubtitles),
+            subtitleTargetLanguage: values.subtitleTargetLanguage
           });
           setOpenModal(false);
           router.push(`/summary/${id}?${query.toString()}`);

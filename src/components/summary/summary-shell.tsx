@@ -1,13 +1,184 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { HomeSidebar } from "@/components/home/home-sidebar";
 import { ExportActions } from "@/components/summary/export-actions";
 import { RightPanelTabs } from "@/components/summary/right-panel-tabs";
+import { GenerateStatus } from "@/components/summary/generate-status";
+import { QAChatPanel } from "@/components/summary/qa-chat-panel";
+import type { VideoHistoryItem, SubtitleReference } from "@/types";
+import type { SummaryStructured } from "@/types/summary";
 
 interface SummaryShellProps {
   summaryId: string;
 }
 
 export function SummaryShell({ summaryId }: SummaryShellProps) {
+  const searchParams = useSearchParams();
+  const [history, setHistory] = useState<VideoHistoryItem | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [hasChecked, setHasChecked] = useState(false);
+  const [translateSubtitles, setTranslateSubtitles] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
+
+  const template = searchParams.get("template") ?? "default";
+  const language = searchParams.get("language") ?? "zh";
+  const detail = (searchParams.get("detail") as "brief" | "standard" | "detailed") ?? "standard";
+  const showTimestamp = searchParams.get("showTimestamp") !== "false";
+  const showEmoji = searchParams.get("showEmoji") !== "false";
+  const shouldTranslate = searchParams.get("translateSubtitles") === "true";
+  const subtitleTargetLanguage = searchParams.get("subtitleTargetLanguage") ?? "zh";
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/history/${summaryId}`, { cache: "no-store" });
+      if (!response.ok) {
+        return;
+      }
+      const result = (await response.json()) as {
+        code: number;
+        data: VideoHistoryItem;
+      };
+      if (result.code === 0) {
+        setHistory(result.data);
+      }
+    } catch (error) {
+      console.error("[summary-shell] load history failed", error);
+    }
+  }, [summaryId]);
+
+  const translateSubtitlesIfNeeded = useCallback(async () => {
+    if (!history || !shouldTranslate || history.translatedSubtitles) return;
+    if (!history.subtitlesArray || history.subtitlesArray.length === 0) return;
+    if (translateSubtitles) return;
+
+    setTranslateSubtitles(true);
+    setTranslateError(null);
+    
+    try {
+      const response = await fetch("/api/subtitles/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          historyId: summaryId,
+          subtitles: history.subtitlesArray,
+          options: {
+            targetLanguage: subtitleTargetLanguage,
+            preserveTimestamps: true
+          }
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.code === 0 && result.data?.translations) {
+        setHistory(prev => prev ? { ...prev, translatedSubtitles: result.data.translations } : null);
+      } else {
+        const errorMsg = result.message || "字幕翻译失败";
+        setTranslateError(errorMsg);
+        console.error("[summary-shell] translate failed:", errorMsg);
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "字幕翻译请求失败";
+      setTranslateError(errorMsg);
+      console.error("[summary-shell] translate subtitles failed", error);
+    } finally {
+      setTranslateSubtitles(false);
+    }
+  }, [history, shouldTranslate, summaryId, subtitleTargetLanguage, translateSubtitles]);
+
+  const generateSummary = useCallback(async () => {
+    if (!history) return;
+
+    setIsGenerating(true);
+    setGenerateError(null);
+
+    try {
+      const response = await fetch("/api/summary/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          historyId: summaryId,
+          template,
+          language,
+          detail,
+          showTimestamp,
+          showEmoji
+        })
+      });
+
+      const result = (await response.json()) as {
+        code: number;
+        data?: {
+          summaryJson: SummaryStructured;
+          summaryMarkdown: string;
+          cached?: boolean;
+        };
+        message: string;
+      };
+
+      if (result.code === 0 && result.data) {
+        setHistory((prev) =>
+          prev
+            ? {
+                ...prev,
+                summaryJson: result.data!.summaryJson,
+                summaryMarkdown: result.data!.summaryMarkdown
+              }
+            : null
+        );
+      } else {
+        setGenerateError(result.message ?? "生成总结失败");
+      }
+    } catch (error) {
+      setGenerateError(error instanceof Error ? error.message : "生成总结失败");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [history, summaryId, template, language, detail, showTimestamp, showEmoji]);
+
+  useEffect(() => {
+    let disposed = false;
+
+    async function init() {
+      await loadHistory();
+      if (!disposed) {
+        setHasChecked(true);
+      }
+    }
+
+    init();
+
+    return () => {
+      disposed = true;
+    };
+  }, [loadHistory]);
+
+  useEffect(() => {
+    if (!hasChecked || !history) return;
+
+    const hasSummary = history.summaryJson && history.summaryMarkdown;
+    if (!hasSummary && !isGenerating && !generateError) {
+      generateSummary();
+    }
+  }, [hasChecked, history, isGenerating, generateError, generateSummary]);
+
+  useEffect(() => {
+    if (hasChecked && history && shouldTranslate && !history.translatedSubtitles && !translateError) {
+      translateSubtitlesIfNeeded();
+    }
+  }, [hasChecked, history, shouldTranslate, translateSubtitlesIfNeeded, translateError]);
+
+  const handleReferenceClick = (ref: SubtitleReference) => {
+    console.log("[summary-shell] reference clicked:", ref);
+  };
+
+  const isLoading = isGenerating || translateSubtitles;
+  const currentError = generateError || translateError;
+
   return (
     <main className="min-h-screen">
       <div className="mx-auto w-[96vw] max-w-[1760px] space-y-3 px-4 py-3 sm:px-5 lg:px-6 lg:py-4">
@@ -28,7 +199,9 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
                 新总结
               </Link>
               <div className="min-w-0">
-                <h1 className="text-lg font-semibold text-zinc-900 lg:text-xl">视频总结</h1>
+                <h1 className="truncate text-lg font-semibold text-zinc-900 lg:text-xl">
+                  {history?.title ?? "视频总结"}
+                </h1>
                 <p className="text-xs text-zinc-500 lg:text-sm">ID: {summaryId}</p>
               </div>
             </div>
@@ -43,24 +216,37 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
             <div className="ui-block p-3">
               <h2 className="text-sm font-semibold">视频播放器</h2>
               <div className="mt-2.5 aspect-video w-full rounded-lg bg-zinc-100 text-sm text-zinc-500">
-                <div className="flex h-full items-center justify-center">Video Player Placeholder</div>
+                <div className="flex h-full items-center justify-center px-3 text-center">
+                  {history?.videoUrl ? `待接入播放器：${history.videoUrl}` : "Video Player Placeholder"}
+                </div>
               </div>
             </div>
-            <div className="ui-block p-3">
-              <h2 className="text-sm font-semibold">AI 问答</h2>
-              <div className="mt-2.5 space-y-2 rounded-lg bg-zinc-50 p-2.5 text-sm">
-                <p>
-                  <span className="font-semibold">用户：</span>请总结这段视频的核心观点。
-                </p>
-                <p>
-                  <span className="font-semibold">助手：</span>已基于字幕检索并生成回答（当前为演示数据）。
-                </p>
+            <div className="ui-block flex flex-col p-3" style={{ height: "400px" }}>
+              <h2 className="mb-2 text-sm font-semibold">AI 问答</h2>
+              <div className="flex-1 overflow-hidden">
+                <QAChatPanel 
+                  historyId={summaryId} 
+                  onReferenceClick={handleReferenceClick}
+                />
               </div>
             </div>
           </section>
 
           <aside className="self-start lg:sticky lg:top-3 lg:h-[calc(100vh-7rem)]">
-            <RightPanelTabs />
+            {isLoading || currentError ? (
+              <GenerateStatus
+                isGenerating={isLoading}
+                error={currentError}
+                onRetry={generateError ? generateSummary : translateSubtitlesIfNeeded}
+              />
+            ) : (
+              <RightPanelTabs
+                subtitles={history?.subtitlesArray}
+                translatedSubtitles={history?.translatedSubtitles}
+                summaryMarkdown={history?.summaryMarkdown}
+                summaryJson={history?.summaryJson}
+              />
+            )}
           </aside>
         </div>
       </div>

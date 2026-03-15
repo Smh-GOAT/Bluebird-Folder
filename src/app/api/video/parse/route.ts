@@ -1,9 +1,7 @@
 import { z } from "zod";
 import { ErrorCodes } from "@/lib/services/common/error-codes";
 import { errorResponse, successResponse } from "@/lib/services/common/api-response";
-import { fetchBilibiliMeta } from "@/lib/services/video/bilibili-parser";
-import { fetchBilibiliNativeSubtitles } from "@/lib/services/video/bilibili-subtitle";
-import { buildBilibiliHeaders } from "@/lib/services/video/request-headers";
+import { detectPlatform, getPlatformParser } from "@/lib/services/video/platform-parser";
 
 const schema = z.object({
   url: z.string().url()
@@ -12,21 +10,16 @@ const schema = z.object({
 export async function POST(request: Request) {
   try {
     const body = schema.parse(await request.json());
-    if (!body.url.includes("bilibili.com") && !body.url.includes("b23.tv")) {
-      return errorResponse(ErrorCodes.UNSUPPORTED_PLATFORM, "Milestone 1 当前仅支持 Bilibili 链接");
+    const platform = detectPlatform(body.url);
+    if (!platform) {
+      return errorResponse(ErrorCodes.UNSUPPORTED_PLATFORM, "当前仅支持 Bilibili / 小红书 链接");
     }
-
-    const headers = buildBilibiliHeaders();
-    const parsed = await fetchBilibiliMeta(body.url, headers);
-    const subtitleResult = await fetchBilibiliNativeSubtitles({
-      bvid: parsed.bvid,
-      cid: parsed.cid,
-      headers
-    });
+    const parser = getPlatformParser(body.url);
+    const parsed = await parser.parse(body.url);
 
     return successResponse({
       meta: parsed.meta,
-      hasNativeSubtitle: subtitleResult.hasNativeSubtitle
+      hasNativeSubtitle: parsed.hasNativeSubtitle
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
