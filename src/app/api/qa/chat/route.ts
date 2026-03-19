@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import type { QAChatRequest, QAChatResponse, QAMessage, SubtitleReference } from "@/types";
-import { getHistoryById } from "@/lib/server/sidebar-store";
-import { createSession, getSession, addMessage } from "@/lib/server/qa-store";
+import { getHistoryById } from "@/lib/server/prisma-store";
+import { createSession, getSession, addMessage } from "@/lib/server/prisma-qa-store";
 import { SubtitleChunker } from "@/lib/services/rag";
 import { createLLMProvider } from "@/lib/services/llm";
 import { getRuntimeConfig } from "@/lib/server/runtime-config-store";
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { code: 40101, data: null, message: "未登录" },
+        { status: 401 }
+      );
+    }
+
     const body: QAChatRequest = await request.json();
     const { historyId, sessionId, message, options } = body;
 
@@ -18,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const history = getHistoryById(historyId);
+    const history = await getHistoryById(user.id, historyId);
     if (!history) {
       return NextResponse.json(
         { code: 404, message: "History not found" },
@@ -26,9 +37,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let session = sessionId ? getSession(sessionId) : null;
+    let session = sessionId ? await getSession(user.id, sessionId) : null;
     if (!session) {
-      session = createSession(historyId);
+      session = await createSession(user.id, historyId);
     }
 
     const userMessage: QAMessage = {
@@ -37,7 +48,7 @@ export async function POST(request: NextRequest) {
       content: message,
       timestamp: new Date().toISOString()
     };
-    addMessage(session.id, userMessage);
+    await addMessage(user.id, session.id, userMessage);
 
     const chunker = new SubtitleChunker();
     const chunks = history.subtitlesArray
@@ -88,7 +99,7 @@ export async function POST(request: NextRequest) {
       references: qaResult.references,
       model: config.llmModel
     };
-    addMessage(session.id, assistantMessage);
+    await addMessage(user.id, session.id, assistantMessage);
 
     const response: QAChatResponse = {
       sessionId: session.id,

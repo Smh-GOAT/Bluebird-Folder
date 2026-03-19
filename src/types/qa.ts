@@ -20,6 +20,7 @@ export interface SubtitleReference {
 export interface QASession {
   id: string;
   historyId: string;
+  title?: string;
   messages: QAMessage[];
   createdAt: string;
   updatedAt: string;

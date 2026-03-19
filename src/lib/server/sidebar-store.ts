@@ -1,3 +1,17 @@
+/**
+ * @deprecated 此文件已废弃，使用 prisma-store.ts 代替
+ * 
+ * 这是一个内存存储实现，仅用于向后兼容和迁移期间。
+ * 所有数据将在服务器重启后丢失。
+ * 
+ * 迁移步骤：
+ * 1. 运行 npx prisma migrate dev
+ * 2. 运行 npx ts-node scripts/export-memory-data.ts > backup.json
+ * 3. 运行 npx ts-node scripts/import-to-database.ts < backup.json
+ * 4. 更新所有 import 从 sidebar-store 改为 prisma-store
+ * 5. 删除此文件
+ */
+
 import { mockFolders, mockHistory } from "@/lib/mock-data";
 import type { FolderItem, VideoHistoryItem } from "@/types";
 

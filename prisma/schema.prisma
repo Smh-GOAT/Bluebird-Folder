@@ -3,28 +3,58 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum VideoPlatform {
+  bilibili
+  youtube
+  xiaohongshu
+  douyin
+}
+
+enum SubtitleSource {
+  platform
+  asr
+  imported
 }
 
 model VideoHistory {
-  id                     String   @id @default(uuid())
-  userId                 String   @map("user_id")
-  folderId               String?  @map("folder_id")
-  videoId                String   @map("video_id")
-  videoUrl               String   @map("video_url")
+  id                     String          @id @default(uuid())
+  userId                 String          @map("user_id")
+  folderId               String?         @map("folder_id")
+  videoId                String          @map("video_id")
+  videoUrl               String          @map("video_url")
   title                  String
-  platform               String
-  summaryJson            Json?    @map("summary_json")
-  summaryMarkdown        String?  @map("summary_markdown")
-  subtitlesArray         Json?    @map("subtitles_array")
-  originalSubtitlesArray Json?    @map("original_subtitles_array")
-  createdAt              DateTime @default(now()) @map("created_at")
-  updatedAt              DateTime @updatedAt @map("updated_at")
+  platform               VideoPlatform
+  author                 String?
+  durationSec            Int?            @map("duration_sec")
+  publishAt              DateTime?       @map("publish_at") @db.Timestamptz(6)
+  subtitleSource         SubtitleSource? @map("subtitle_source")
+  fullText               String?         @map("full_text") @db.Text
+  subtitlesArray         Json?           @map("subtitles_array")
+  originalSubtitlesArray Json?           @map("original_subtitles_array")
+  translatedSubtitles    Json?           @map("translated_subtitles")
+  translationMeta        Json?           @map("translation_meta")
+  summaryJson            Json?           @map("summary_json")
+  summaryMarkdown        String?         @map("summary_markdown") @db.Text
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  qaSessions      QASession[]
+  subtitleSegments SubtitleSegment[]
+  folder          Folder?   @relation(fields: [folderId], references: [id])
 
   @@map("video_histories")
+  @@index([userId])
   @@index([userId, createdAt])
-  @@index([folderId, createdAt])
+  @@index([userId, updatedAt])
+  @@index([platform])
+  @@index([subtitleSource])
+  @@index([folderId])
 }
 
 model UserPreference {
@@ -58,10 +88,65 @@ model Folder {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   name      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  histories VideoHistory[]
 
   @@map("folders")
   @@unique([userId, name])
+  @@index([userId])
   @@index([userId, createdAt])
+}
+
+model QASession {
+  id        String   @id @default(uuid())
+  historyId String   @map("history_id")
+  userId    String   @map("user_id")
+  title     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  history  VideoHistory @relation(fields: [historyId], references: [id], onDelete: Cascade)
+  messages QAMessage[]
+
+  @@map("qa_sessions")
+  @@index([historyId, userId])
+  @@index([userId, updatedAt])
+  @@index([updatedAt])
+}
+
+model QAMessage {
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")
+  role      String
+  content   String   @db.Text
+  timestamp DateTime @default(now()) @db.Timestamptz(6)
+  model     String?
+  references Json?
+
+  // Relations
+  session QASession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("qa_messages")
+  @@index([sessionId, timestamp])
+}
+
+model SubtitleSegment {
+  id        String @id @default(uuid())
+  historyId String @map("history_id")
+  idx       Int
+  startMs   Int    @map("start_ms")
+  endMs     Int    @map("end_ms")
+  text      String @db.Text
+  lang      String
+
+  // Relations
+  history VideoHistory @relation(fields: [historyId], references: [id], onDelete: Cascade)
+
+  @@index([historyId, idx])
+  @@index([historyId, startMs, endMs])
+  @@map("subtitle_segments")
 }

@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listHistories, saveHistory } from "@/lib/server/sidebar-store";
+import { createClient } from "@/lib/supabase/server";
+import { listHistories, saveHistory } from "@/lib/server/prisma-store";
 import type { VideoHistoryItem } from "@/types";
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { code: 40101, data: null, message: "未登录" },
+        { status: 401 }
+      );
+    }
+
     const folderId = request.nextUrl.searchParams.get("folderId") ?? undefined;
-    const histories = listHistories(folderId);
+    const histories = await listHistories(user.id, folderId);
     return NextResponse.json({
       code: 0,
       data: {
@@ -27,6 +38,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { code: 40101, data: null, message: "未登录" },
+        { status: 401 }
+      );
+    }
+
     const body = (await request.json()) as Partial<VideoHistoryItem>;
     if (!body.id || !body.title || !body.platform || !body.createdAt) {
       return NextResponse.json(
@@ -38,7 +59,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const saved = saveHistory(body as VideoHistoryItem);
+    const saved = await saveHistory(user.id, body as VideoHistoryItem);
     return NextResponse.json({
       code: 0,
       data: saved,

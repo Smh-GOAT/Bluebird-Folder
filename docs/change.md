@@ -794,3 +794,167 @@
   - `POST /api/qa/chat`
   - `GET /api/qa/session/[id]`
   - `POST /api/subtitles/translate`
+
+## 2026-03-15
+
+### 新增：Milestone 4.5 - 数据库迁移（内存存储 → Supabase PostgreSQL）
+
+**功能描述**：
+将项目从内存存储迁移到 Supabase PostgreSQL 数据库，实现数据持久化、多用户隔离，并为 Milestone 5 扩展提供稳定的数据层。
+
+**本次新增**：
+
+#### 1. 数据库 Schema 升级
+- **扩展 `VideoHistory` 模型**：
+  - 添加 `VideoPlatform` 和 `SubtitleSource` Enums
+  - 新增字段：author, durationSec, publishAt, subtitleSource, fullText, translatedSubtitles, translationMeta
+  - 添加与 Folder 的关系
+  - 添加所有必要的索引（userId, platform, subtitleSource, folderId 等）
+  
+- **新增 QA 相关模型**：
+  - `QASession`：QA 会话表，支持按 historyId 和 userId 查询
+  - `QAMessage`：QA 消息表，存储对话消息和引用信息
+  - 添加级联删除关系（删除历史记录时自动清理关联的会话和消息）
+  
+- **新增字幕分段表**：
+  - `SubtitleSegment`：支持按时间范围查询字幕片段
+  - 用于 QA 引用跳转和精确时间定位
+
+#### 2. Prisma 数据访问层
+- **`src/lib/server/prisma-store.ts`**：
+  - 文件夹操作：listFolders, createFolder, renameFolder, deleteFolder
+  - 历史记录操作：listHistories, getHistoryById, saveHistory, moveHistoryToFolder
+  - 统计操作：getFolderCounts
+  - 类型转换：前端 VideoHistoryItem ↔ 数据库 VideoHistory
+  - 所有操作强制带 userId 过滤（多用户隔离）
+
+- **`src/lib/server/prisma-qa-store.ts`**：
+  - 会话操作：createSession, getSession, listSessionsByHistoryId
+  - 消息操作：addMessage, listSessionMessages
+  - 管理操作：clearSession, deleteSession
+  - 事务处理：添加消息时同时更新会话 updatedAt
+
+#### 3. 数据迁移脚本
+- **`scripts/export-memory-data.ts`**：
+  - 从内存存储导出所有文件夹、历史记录和 QA 会话
+  - 输出标准 JSON 格式，便于备份和迁移
+  
+- **`scripts/import-to-database.ts`**：
+  - 幂等导入（upsert），重复执行不会插入重复数据
+  - 分批写入（每批100条），带事务保证
+  - 字段映射转换（Enum 转换、DateTime 转换、duration → durationSec）
+  - 字幕拆分逻辑：同时写入 JSON 和 subtitle_segments 表
+  - 详细日志输出（成功/失败计数、错误原因 Top N）
+
+#### 4. API 路由迁移到 Prisma
+- **文件夹 API**：
+  - `GET/POST /api/folders` - 使用 prisma-store
+  - `PATCH/DELETE /api/folders/[id]` - 使用 prisma-store
+  - 添加用户认证检查
+
+- **历史记录 API**：
+  - `GET /api/history` - 使用 prisma-store
+  - `POST /api/history` - 使用 prisma-store
+  - `GET /api/history/[id]` - 使用 prisma-store
+  - `POST /api/history/[id]/move` - 使用 prisma-store
+  - 添加用户认证检查
+
+- **QA API**：
+  - `POST /api/qa/chat` - 使用 prisma-qa-store
+  - `GET /api/qa/session/[id]` - 使用 prisma-qa-store
+  - `POST /api/qa/session` - 创建新会话
+  - `DELETE /api/qa/session/[id]` - 删除会话
+  - `POST /api/qa/message` - 发送消息
+  - `GET /api/qa/history/[historyId]/sessions` - 获取视频的所有会话
+  - 添加用户认证检查
+
+- **其他 API**：
+  - `POST /api/transcript/fetch` - 使用 prisma-store 保存历史
+  - `POST /api/summary/generate` - 使用 prisma-store 读取和更新历史
+
+#### 5. 安全与兼容性
+- 所有 API 路由都添加了 Supabase 用户认证检查
+- 所有数据库查询都强制包含 userId 过滤
+- 标记 `sidebar-store.ts` 为 deprecated（保留向后兼容）
+- 更新 `package.json` 使用 Prisma 6.6.0（稳定版本）
+- 添加 `ts-node` 用于运行迁移脚本
+- 更新错误码：添加 `UNAUTHORIZED` (40101)
+
+**数据模型关系**：
+```
+VideoHistory
+├── QASession[] (1:N)
+├── SubtitleSegment[] (1:N)
+└── Folder? (N:1)
+
+QASession
+├── VideoHistory (N:1)
+└── QAMessage[] (1:N)
+
+Folder
+└── VideoHistory[] (1:N)
+```
+
+**字段映射规则**：
+| 前端字段 | 数据库字段 | 转换 |
+|---------|-----------|------|
+| platform (string) | platform (VideoPlatform Enum) | bilibili/youtube/xiaohongshu |
+| createdAt (string ISO) | createdAt (DateTime) | 自动转换 |
+| publishAt (string ISO) | publishAt (DateTime) | 自动转换 |
+| duration (number) | durationSec (Int) | 字段名映射 |
+| subtitleSource (string) | subtitleSource (SubtitleSource Enum) | native→platform, asr, imported |
+
+**迁移步骤**：
+1. `npm install` - 安装依赖
+2. 配置 `.env.local`（DATABASE_URL, DIRECT_URL）
+3. `npx prisma generate` - 生成 Prisma Client
+4. `npx prisma migrate dev --name add_video_fields_and_qa_tables` - 创建迁移
+5. `npx ts-node scripts/export-memory-data.ts > backup.json` - 导出数据
+6. `npx ts-node scripts/import-to-database.ts <user-id> < backup.json` - 导入数据
+7. `npm run lint && npm run build` - 验证
+
+**技术亮点**：
+- 幂等迁移脚本，可重复执行不丢数据
+- 分批事务处理，大数据量安全导入
+- 完整的类型转换层，前端代码无需大改
+- 级联删除关系，数据一致性保障
+- 多用户隔离，所有查询强制 userId 过滤
+
+**文件变更汇总**：
+- 新建：
+  - `scripts/export-memory-data.ts`
+  - `scripts/import-to-database.ts`
+  - `src/lib/server/prisma-store.ts`
+  - `src/lib/server/prisma-qa-store.ts`
+  - `src/app/api/qa/session/route.ts`
+  - `src/app/api/qa/session/[id]/route.ts`
+  - `src/app/api/qa/message/route.ts`
+  - `src/app/api/qa/history/[historyId]/sessions/route.ts`
+- 修改：
+  - `prisma/schema.prisma` - 完整数据库 Schema
+  - `package.json` - 更新 Prisma 版本
+  - `src/lib/server/sidebar-store.ts` - 标记 deprecated
+  - `src/lib/services/common/error-codes.ts` - 添加 UNAUTHORIZED
+  - `src/app/api/folders/route.ts` - 迁移到 Prisma
+  - `src/app/api/folders/[id]/route.ts` - 迁移到 Prisma
+  - `src/app/api/history/route.ts` - 迁移到 Prisma
+  - `src/app/api/history/[id]/route.ts` - 迁移到 Prisma
+  - `src/app/api/history/[id]/move/route.ts` - 迁移到 Prisma
+  - `src/app/api/qa/chat/route.ts` - 迁移到 Prisma QA store
+  - `src/app/api/transcript/fetch/route.ts` - 迁移到 Prisma store
+  - `src/app/api/summary/generate/route.ts` - 迁移到 Prisma store
+
+**验收标准**：
+- Prisma migrate 成功执行，无错误
+- Supabase Dashboard 可见所有表且结构正确
+- 从内存导出的数据完整导入数据库（记录数一致）
+- 时间字段正确存储为 Timestamptz，排序正常
+- Enum 字段无脏数据（platform、subtitleSource）
+- subtitle_segments 表正确拆分并关联到 video_histories
+- Bilibili/小红书解析链路在数据库模式下正常工作
+- 总结生成后可在数据库中查询到 summaryJson 和 summaryMarkdown
+- 创建 QA 会话、发送消息、查询历史会话流程通顺
+- 重启 Next.js 服务后，历史记录不丢失
+- `npm run lint` 和 `npm run build` 通过
+
+**注意**：当前 LSP 类型错误将在运行 `npm install && npx prisma generate` 后自动消失。

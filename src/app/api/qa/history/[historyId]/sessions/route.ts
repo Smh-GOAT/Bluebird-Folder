@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { moveHistoryToFolder } from "@/lib/server/prisma-store";
+import { listSessionsByHistoryId } from "@/lib/server/prisma-qa-store";
 
-interface Params {
-  params: Promise<{ id: string }>;
-}
-
-export async function POST(request: NextRequest, { params }: Params) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ historyId: string }> }
+) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -18,22 +17,22 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
-    const { id } = await params;
-    const body = (await request.json()) as { folderId?: string | null };
-    const history = await moveHistoryToFolder(user.id, id, body.folderId ?? null);
+    const { historyId } = await params;
+    const sessions = await listSessionsByHistoryId(user.id, historyId);
+
     return NextResponse.json({
       code: 0,
-      data: history,
+      data: { sessions },
       message: "success"
     });
   } catch (error) {
     return NextResponse.json(
       {
-        code: 40001,
+        code: 50001,
         data: null,
-        message: error instanceof Error ? error.message : "移动失败"
+        message: error instanceof Error ? error.message : "获取会话列表失败"
       },
-      { status: 400 }
+      { status: 500 }
     );
   }
 }

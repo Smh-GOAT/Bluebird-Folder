@@ -1,28 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createFolder, getFolderCounts, listFolders } from "@/lib/server/sidebar-store";
+import { createClient } from "@/lib/supabase/server";
+import {
+  createFolder,
+  getFolderCounts,
+  listFolders
+} from "@/lib/server/prisma-store";
 
 export async function GET() {
-  const folders = listFolders();
-  const counts = getFolderCounts();
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  return NextResponse.json({
-    code: 0,
-    data: {
-      folders: folders.map((folder) => ({
-        ...folder,
-        count: counts.folders[folder.id] ?? 0
-      })),
-      total: counts.total,
-      unassigned: counts.unassigned
-    },
-    message: "success"
-  });
+    if (!user) {
+      return NextResponse.json(
+        { code: 40101, data: null, message: "未登录" },
+        { status: 401 }
+      );
+    }
+
+    const folders = await listFolders(user.id);
+    const counts = await getFolderCounts(user.id);
+
+    return NextResponse.json({
+      code: 0,
+      data: {
+        folders: folders.map((folder) => ({
+          ...folder,
+          count: counts.folders[folder.id] ?? 0
+        })),
+        total: counts.total,
+        unassigned: counts.unassigned
+      },
+      message: "success"
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        code: 50001,
+        data: null,
+        message: error instanceof Error ? error.message : "获取文件夹失败"
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { code: 40101, data: null, message: "未登录" },
+        { status: 401 }
+      );
+    }
+
     const body = (await request.json()) as { name?: string };
-    const folder = createFolder(body.name ?? "");
+    const folder = await createFolder(user.id, body.name ?? "");
     return NextResponse.json({
       code: 0,
       data: folder,

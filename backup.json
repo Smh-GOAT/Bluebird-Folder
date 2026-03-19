@@ -1,0 +1,66 @@
+{
+  "folders": [
+    {
+      "id": "product",
+      "name": "产品设计"
+    },
+    {
+      "id": "tech",
+      "name": "技术教程"
+    }
+  ],
+  "histories": [
+    {
+      "id": "demo-1",
+      "title": "BibiGPT MVP 演示视频",
+      "platform": "bilibili",
+      "createdAt": "2026-03-04T21:00:00.000Z",
+      "folderId": "product",
+      "videoId": "BV1xx411c7mD",
+      "videoUrl": "https://www.bilibili.com/video/BV1xx411c7mD",
+      "author": "BibiGPT官方",
+      "duration": 1800,
+      "publishAt": "2026-03-01T12:00:00.000Z",
+      "subtitleSource": "native",
+      "subtitlesArray": [
+        {
+          "start": 0,
+          "end": 5000,
+          "text": "欢迎使用 BibiGPT，这是一个 AI 视频总结工具"
+        },
+        {
+          "start": 5000,
+          "end": 10000,
+          "text": "让我们开始演示如何使用这个平台"
+        }
+      ],
+      "fullText": "欢迎使用 BibiGPT，这是一个 AI 视频总结工具。让我们开始演示如何使用这个平台。",
+      "summaryMarkdown": null,
+      "summaryJson": null
+    },
+    {
+      "id": "demo-2",
+      "title": "YouTube: Building AI Summary Workflow",
+      "platform": "youtube",
+      "createdAt": "2026-03-04T19:20:00.000Z",
+      "folderId": null,
+      "videoId": "dQw4w9WgXcQ",
+      "videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "author": "Tech Channel",
+      "duration": 2400,
+      "publishAt": "2026-02-28T08:00:00.000Z",
+      "subtitleSource": "asr",
+      "subtitlesArray": [
+        {
+          "start": 0,
+          "end": 6000,
+          "text": "Today we are going to build an AI summary workflow"
+        }
+      ],
+      "fullText": "Today we are going to build an AI summary workflow.",
+      "summaryMarkdown": null,
+      "summaryJson": null
+    }
+  ],
+  "exportedAt": "2026-03-15T08:53:45.721Z"
+}

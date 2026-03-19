@@ -1,12 +1,15 @@
  "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { HomeSidebar } from "@/components/home/home-sidebar";
 import { LinkInputPanel } from "@/components/home/link-input-panel";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { AuthCheck } from "./auth-check";
 
-export function HomeShell() {
+function HomeShellContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hasParsed, setHasParsed] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   return (
     <div className="relative min-h-screen">
@@ -34,7 +37,7 @@ export function HomeShell() {
         }`}
       >
         <div className="h-full overflow-y-auto p-4">
-          <HomeSidebar compact />
+          <HomeSidebar compact onLoginClick={() => setAuthModalOpen(true)} />
         </div>
       </aside>
 
@@ -74,7 +77,7 @@ export function HomeShell() {
                 <h2 className="ui-title">流程说明</h2>
                 <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-6 text-zinc-600">
                   <li>先输入视频链接并完成元信息 + 字幕/转写解析。</li>
-                  <li>确认解析结果后，点击“生成总结”打开自定义弹窗。</li>
+                  <li>确认解析结果后，点击"生成总结"打开自定义弹窗。</li>
                   <li>选择模板和语言参数后，进入总结页查看三列内容并导出。</li>
                 </ol>
               </div>
@@ -82,6 +85,26 @@ export function HomeShell() {
           ) : null}
         </div>
       </main>
+
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <Suspense fallback={null}>
+        <AuthCheck onAuthRequired={() => setAuthModalOpen(true)} />
+      </Suspense>
     </div>
+  );
+}
+
+export function HomeShell() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <div className="text-center">
+          <div className="mb-4 text-4xl">⏳</div>
+          <p className="text-zinc-500">加载中...</p>
+        </div>
+      </div>
+    }>
+      <HomeShellContent />
+    </Suspense>
   );
 }

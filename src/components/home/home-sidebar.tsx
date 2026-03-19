@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AuthPanel } from "@/components/layout/auth-panel";
-import { createClient } from "@/lib/supabase/client";
+import { UserMenu } from "@/components/user/UserMenu";
+import { useAuth } from "@/contexts/AuthContext";
 import type { FolderItem, VideoHistoryItem } from "@/types";
 
 interface FoldersResponse {
@@ -24,18 +24,17 @@ interface HistoryResponse {
 
 interface HomeSidebarProps {
   compact?: boolean;
+  onLoginClick?: () => void;
 }
 
-export function HomeSidebar({ compact = false }: HomeSidebarProps) {
+export function HomeSidebar({ compact = false, onLoginClick }: HomeSidebarProps) {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
+  const { user, isAuthenticated } = useAuth();
   const [folders, setFolders] = useState<Array<FolderItem & { count: number }>>([]);
   const [histories, setHistories] = useState<VideoHistoryItem[]>([]);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [expandedFolderIds, setExpandedFolderIds] = useState<string[]>([]);
   const [openMenuFolderId, setOpenMenuFolderId] = useState<string | null>(null);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function loadFolders() {
@@ -74,27 +73,6 @@ export function HomeSidebar({ compact = false }: HomeSidebarProps) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!supabase) {
-      setAccountEmail(null);
-      return;
-    }
-
-    supabase.auth.getUser().then(({ data }) => {
-      setAccountEmail(data.user?.email ?? null);
-    });
-
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAccountEmail(session?.user?.email ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
 
   const folderItems = useMemo(() => folders, [folders]);
 
@@ -352,33 +330,29 @@ export function HomeSidebar({ compact = false }: HomeSidebarProps) {
         </div>
 
         <section className={compact ? "ui-panel-subtle mt-3 p-2.5" : "ui-panel-subtle mt-3 p-3"}>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-zinc-100"
-            onClick={() => setAccountOpen(true)}
-          >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-700">
-              {accountEmail ? accountEmail.slice(0, 1).toUpperCase() : "账"}
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm text-zinc-700">
-                {accountEmail ? accountEmail : "登录 / 注册"}
+          {isAuthenticated && user ? (
+            <UserMenu />
+          ) : (
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-zinc-100"
+              onClick={onLoginClick}
+            >
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-700">
+                账
               </span>
-              <span className="block text-xs text-zinc-500">
-                {accountEmail ? "管理账户" : "点击打开账户面板"}
+              <span className="min-w-0">
+                <span className="block truncate text-sm text-zinc-700">
+                  登录 / 注册
+                </span>
+                <span className="block text-xs text-zinc-500">
+                  点击打开账户面板
+                </span>
               </span>
-            </span>
-          </button>
+            </button>
+          )}
         </section>
       </aside>
-
-      {accountOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setAccountOpen(false)}>
-          <div className="w-full max-w-md" onClick={(event) => event.stopPropagation()}>
-            <AuthPanel />
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }

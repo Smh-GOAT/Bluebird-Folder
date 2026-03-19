@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { SubtitleTranslateRequest, SubtitleTranslation } from "@/types";
-import { getHistoryById, saveHistory } from "@/lib/server/sidebar-store";
+import { createClient } from "@/lib/supabase/server";
+import { getHistoryById, saveHistory } from "@/lib/server/prisma-store";
 import { createLLMProvider } from "@/lib/services/llm";
 import { getRuntimeConfig } from "@/lib/server/runtime-config-store";
 import { formatTime } from "@/lib/utils/time";
@@ -109,6 +110,16 @@ async function translateBatch(
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { code: 40101, data: null, message: "未登录" },
+        { status: 401 }
+      );
+    }
+
     const body: SubtitleTranslateRequest = await request.json();
     const { historyId, subtitles, options } = body;
 
@@ -119,7 +130,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const history = getHistoryById(historyId);
+    const history = await getHistoryById(user.id, historyId);
     if (!history) {
       return NextResponse.json(
         { code: 404, message: "History not found" },
@@ -169,7 +180,7 @@ export async function POST(request: NextRequest) {
         translatedAt: new Date().toISOString()
       }
     };
-    saveHistory(updatedHistory);
+    await saveHistory(user.id, updatedHistory);
 
     return NextResponse.json({
       code: 0,

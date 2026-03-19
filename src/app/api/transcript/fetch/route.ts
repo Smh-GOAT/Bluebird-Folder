@@ -2,7 +2,8 @@ import { z } from "zod";
 import { ErrorCodes } from "@/lib/services/common/error-codes";
 import { errorResponse, successResponse } from "@/lib/services/common/api-response";
 import { detectPlatform, getPlatformParser } from "@/lib/services/video/platform-parser";
-import { saveHistory } from "@/lib/server/sidebar-store";
+import { saveHistory } from "@/lib/server/prisma-store";
+import { createClient } from "@/lib/supabase/server";
 
 const schema = z.object({
   url: z.string().url()
@@ -14,6 +15,13 @@ function createHistoryId(platform: string, videoId: string) {
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return errorResponse(ErrorCodes.UNAUTHORIZED, "未登录");
+    }
+
     const body = schema.parse(await request.json());
     const platform = detectPlatform(body.url);
     if (!platform) {
@@ -23,7 +31,7 @@ export async function POST(request: Request) {
     const transcript = await parser.fetchTranscript(body.url);
     const historyId = createHistoryId(transcript.meta.platform, transcript.meta.videoId);
 
-    saveHistory({
+    await saveHistory(user.id, {
       id: historyId,
       title: transcript.meta.title,
       platform: transcript.meta.platform,

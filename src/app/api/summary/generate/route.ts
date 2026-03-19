@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getHistoryById, saveHistory } from "@/lib/server/sidebar-store";
+import { createClient } from "@/lib/supabase/server";
+import { getHistoryById, saveHistory } from "@/lib/server/prisma-store";
 import { createLLMProvider } from "@/lib/services/llm";
 import type { LLMProviderType, SummaryTemplate, SummaryStructured } from "@/types/summary";
 
@@ -13,6 +14,16 @@ const DEFAULT_MODELS: Record<LLMProviderType, string> = {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { code: 40101, data: null, message: "未登录" },
+        { status: 401 }
+      );
+    }
+
     const body = (await request.json()) as {
       historyId: string;
       template?: string;
@@ -31,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const history = getHistoryById(historyId);
+    const history = await getHistoryById(user.id, historyId);
     if (!history) {
       return NextResponse.json(
         { code: 40401, data: null, message: "历史记录不存在" },
@@ -104,7 +115,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const updatedHistory = saveHistory({
+    const updatedHistory = await saveHistory(user.id, {
       ...history,
       summaryJson: result.structured as SummaryStructured,
       summaryMarkdown: result.markdown ?? ""
