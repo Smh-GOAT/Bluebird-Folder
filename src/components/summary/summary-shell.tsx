@@ -8,6 +8,9 @@ import { ExportActions } from "@/components/summary/export-actions";
 import { RightPanelTabs } from "@/components/summary/right-panel-tabs";
 import { GenerateStatus } from "@/components/summary/generate-status";
 import { QAChatPanel } from "@/components/summary/qa-chat-panel";
+import { VideoPlayer } from "@/components/video/video-player";
+import { PlayerPlaceholder } from "@/components/video/player-placeholder";
+import { VideoTimeProvider } from "@/components/summary/video-time-context";
 import type { VideoHistoryItem, SubtitleReference } from "@/types";
 import type { SummaryStructured } from "@/types/summary";
 
@@ -205,50 +208,60 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
                 <p className="text-xs text-zinc-500 lg:text-sm">ID: {summaryId}</p>
               </div>
             </div>
-            <ExportActions />
+            <ExportActions history={history} />
           </div>
         </header>
 
-        <div className="grid min-h-[calc(100vh-8.5rem)] grid-cols-1 gap-4 lg:grid-cols-[220px_400px_minmax(680px,1fr)] xl:grid-cols-[220px_440px_minmax(720px,1fr)]">
-          <HomeSidebar compact />
+        <VideoTimeProvider>
+          <div className="grid min-h-[calc(100vh-8.5rem)] grid-cols-1 gap-4 lg:grid-cols-[220px_400px_minmax(680px,1fr)] xl:grid-cols-[220px_440px_minmax(720px,1fr)]">
+            <HomeSidebar compact />
 
-          <section className="ui-panel space-y-3 p-3.5 lg:p-4">
-            <div className="ui-block p-3">
-              <h2 className="text-sm font-semibold">视频播放器</h2>
-              <div className="mt-2.5 aspect-video w-full rounded-lg bg-zinc-100 text-sm text-zinc-500">
-                <div className="flex h-full items-center justify-center px-3 text-center">
-                  {history?.videoUrl ? `待接入播放器：${history.videoUrl}` : "Video Player Placeholder"}
+            <section className="ui-panel space-y-3 p-3.5 lg:p-4">
+              <div className="ui-block p-3">
+                <h2 className="text-sm font-semibold">视频播放器</h2>
+                <div className="mt-2.5">
+                  {history?.videoUrl ? (
+                    <VideoPlayer
+                      videoUrl={history.videoUrl}
+                      platform={history.platform}
+                    />
+                  ) : (
+                    <PlayerPlaceholder
+                      platform={history?.platform}
+                      videoId={history?.videoId}
+                    />
+                  )}
                 </div>
               </div>
-            </div>
-            <div className="ui-block flex flex-col p-3" style={{ height: "400px" }}>
-              <h2 className="mb-2 text-sm font-semibold">AI 问答</h2>
-              <div className="flex-1 overflow-hidden">
-                <QAChatPanel 
-                  historyId={summaryId} 
-                  onReferenceClick={handleReferenceClick}
-                />
+              <div className="ui-block flex flex-col p-3" style={{ height: "400px" }}>
+                <h2 className="mb-2 text-sm font-semibold">AI 问答</h2>
+                <div className="flex-1 overflow-hidden">
+                  <QAChatPanel
+                    historyId={summaryId}
+                    onReferenceClick={handleReferenceClick}
+                  />
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <aside className="self-start lg:sticky lg:top-3 lg:h-[calc(100vh-7rem)]">
-            {isLoading || currentError ? (
-              <GenerateStatus
-                isGenerating={isLoading}
-                error={currentError}
-                onRetry={generateError ? generateSummary : translateSubtitlesIfNeeded}
-              />
-            ) : (
-              <RightPanelTabs
-                subtitles={history?.subtitlesArray}
-                translatedSubtitles={history?.translatedSubtitles}
-                summaryMarkdown={history?.summaryMarkdown}
-                summaryJson={history?.summaryJson}
-              />
-            )}
-          </aside>
-        </div>
+            <aside className="self-start lg:sticky lg:top-3 lg:h-[calc(100vh-7rem)]">
+              {isLoading || currentError ? (
+                <GenerateStatus
+                  isGenerating={isLoading}
+                  error={currentError}
+                  onRetry={generateError ? generateSummary : translateSubtitlesIfNeeded}
+                />
+              ) : (
+                <RightPanelTabs
+                  subtitles={history?.subtitlesArray}
+                  translatedSubtitles={history?.translatedSubtitles}
+                  summaryMarkdown={history?.summaryMarkdown}
+                  summaryJson={history?.summaryJson}
+                />
+              )}
+            </aside>
+          </div>
+        </VideoTimeProvider>
       </div>
     </main>
   );

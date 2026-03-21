@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       ? chunker.chunk(history.subtitlesArray)
       : [];
 
-    const maxRefs = options?.maxReferences ?? 5;
+    const maxRefs = options?.maxReferences ?? 10;
     const relevantChunks = chunks.length > 0
       ? chunker.search(message, chunks, maxRefs)
       : [];

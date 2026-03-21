@@ -5,6 +5,9 @@ import type { SubtitleSegment, SubtitleTranslation } from "@/types";
 import type { SummaryStructured } from "@/types/summary";
 import { SummaryDisplay } from "./summary-display";
 import { SubtitleTranslationToggle } from "./subtitle-translation-toggle";
+import { SubtitleEditor } from "./subtitle-editor";
+import { TimestampButton } from "./timestamp-button";
+import { formatTimeShort } from "@/lib/utils/time";
 
 interface RightPanelTabsProps {
   subtitles?: SubtitleSegment[];
@@ -21,6 +24,8 @@ export function RightPanelTabs({
 }: RightPanelTabsProps) {
   const [tab, setTab] = useState<"summary" | "transcript">("summary");
   const [showTranslated, setShowTranslated] = useState(!!translatedSubtitles);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedSubtitles, setEditedSubtitles] = useState<SubtitleSegment[] | null>(null);
 
   const hasSummary = summaryJson || summaryMarkdown;
   const hasTranslation = !!translatedSubtitles && translatedSubtitles.length > 0;
@@ -59,6 +64,19 @@ export function RightPanelTabs({
           >
             原文细读
           </button>
+          {tab === "transcript" && (displaySubtitles?.length ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(!isEditing)}
+              className={`ml-auto rounded-md px-3 py-1.5 text-sm ${
+                isEditing 
+                  ? "bg-zinc-100 text-zinc-700" 
+                  : "border border-zinc-200 text-zinc-700 hover:bg-zinc-50"
+              }`}
+            >
+              {isEditing ? "完成" : "编辑"}
+            </button>
+          )}
         </div>
         <p className="mt-2 text-xs text-zinc-500">
           {hasSummary ? "右侧为主阅读区：优先阅读 Markdown，JSON 仅作结构辅助。" : "暂无总结，请先生成总结。"}
@@ -88,28 +106,42 @@ export function RightPanelTabs({
             </div>
           )
         ) : (
-          <div className="space-y-2.5 text-sm">
-            {hasTranslation && (
-              <SubtitleTranslationToggle
-                originalSubtitles={subtitles ?? []}
-                translatedSubtitles={translatedSubtitles}
-                onToggle={setShowTranslated}
-              />
-            )}
-            {displaySubtitles?.map((seg, index) => (
-              <p key={index} className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-2.5">
-                <span className="mr-2 text-xs text-zinc-500">
-                  {seg.start}s - {seg.end}s
-                </span>
-                {seg.text}
-              </p>
-            ))}
-            {(!displaySubtitles || displaySubtitles.length === 0) && (
-              <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 p-8 text-center">
-                <p className="text-sm text-zinc-500">暂无字幕数据</p>
-              </div>
-            )}
-          </div>
+          isEditing ? (
+            <SubtitleEditor
+              subtitles={displaySubtitles || []}
+              onSave={(newSubtitles) => {
+                setEditedSubtitles(newSubtitles);
+                setIsEditing(false);
+                console.log("Saving subtitles:", newSubtitles);
+              }}
+              onCancel={() => setIsEditing(false)}
+            />
+          ) : (
+            <div className="space-y-2.5 text-sm">
+              {hasTranslation && (
+                <SubtitleTranslationToggle
+                  originalSubtitles={subtitles ?? []}
+                  translatedSubtitles={translatedSubtitles}
+                  onToggle={setShowTranslated}
+                />
+              )}
+              {displaySubtitles?.map((seg, index) => (
+                <div key={index} className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-2.5">
+                  <div className="mb-1 flex items-center gap-2">
+                    <TimestampButton time={seg.start} format="short" />
+                    <span className="text-xs text-zinc-400">-</span>
+                    <span className="text-xs text-zinc-400">{formatTimeShort(seg.end)}</span>
+                  </div>
+                  <p className="text-sm">{seg.text}</p>
+                </div>
+              ))}
+              {(!displaySubtitles || displaySubtitles.length === 0) && (
+                <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 p-8 text-center">
+                  <p className="text-sm text-zinc-500">暂无字幕数据</p>
+                </div>
+              )}
+            </div>
+          )
         )}
       </div>
     </section>

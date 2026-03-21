@@ -24,3 +24,36 @@ export function formatDuration(seconds: number): string {
   }
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
+
+/**
+ * Format seconds to short time string (MM:SS)
+ * Example: 155 → "02:35"
+ */
+export function formatTimeShort(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Format seconds to long time string (HH:MM:SS)
+ * Example: 9323 → "02:35:23"
+ */
+export function formatTimeLong(seconds: number): string {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Convert seconds to SRT timecode format
+ * Example: 155.5 → "00:02:35,500"
+ */
+export function secondsToSrtTime(seconds: number): string {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds % 1) * 1000);
+  return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")},${ms.toString().padStart(3, "0")}`;
+}

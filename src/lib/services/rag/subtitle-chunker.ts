@@ -8,7 +8,7 @@ export interface SubtitleChunk {
 }
 
 export class SubtitleChunker {
-  private targetChunkSize = 80;
+  private targetChunkSize = 200;
   private minChunkSize = 40;
 
   chunk(subtitles: SubtitleSegment[]): SubtitleChunk[] {
@@ -72,9 +72,10 @@ export class SubtitleChunker {
     };
   }
 
-  search(query: string, chunks: SubtitleChunk[], topK: number): SubtitleChunk[] {
+  search(query: string, chunks: SubtitleChunk[], topK: number = 12): SubtitleChunk[] {
+    const topKEffective = topK < 8 ? 12 : topK;
     const queryWords = this.extractKeywords(query.toLowerCase());
-    if (queryWords.length === 0) return chunks.slice(0, topK);
+    if (queryWords.length === 0) return chunks.slice(0, topKEffective);
 
     const scored = chunks.map(chunk => {
       const chunkText = chunk.text.toLowerCase();
@@ -85,6 +86,12 @@ export class SubtitleChunker {
           const count = (chunkText.match(new RegExp(word, "g")) || []).length;
           score += count * word.length;
         }
+        const fuzzyMatches = this.fuzzyMatch(word, chunkText);
+        score += fuzzyMatches * 0.5;
+      }
+
+      if (chunkText.includes(query.toLowerCase())) {
+        score += query.length * 2;
       }
 
       const tfidfScore = this.calculateTFIDF(queryWords, chunkText, chunks);
@@ -94,7 +101,25 @@ export class SubtitleChunker {
     });
 
     scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, topK).map(s => s.chunk);
+    return scored.slice(0, topKEffective).map(s => s.chunk);
+  }
+
+  private fuzzyMatch(queryWord: string, chunkText: string): number {
+    if (queryWord.length < 3) return 0;
+    let bonus = 0;
+    // Find all words in chunk that share >= 3-char prefix with queryWord
+    const chunkWords = chunkText.split(/\s+/);
+    for (const cw of chunkWords) {
+      if (cw.length < 3) continue;
+      const minLen = Math.min(queryWord.length, cw.length);
+      let matchLen = 0;
+      for (let i = 0; i < minLen; i++) {
+        if (queryWord[i] === cw[i]) matchLen++;
+        else break;
+      }
+      if (matchLen >= 3) bonus += matchLen;
+    }
+    return bonus;
   }
 
   private extractKeywords(text: string): string[] {
