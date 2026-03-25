@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { TEMPLATE_REGISTRY, type SummaryTemplate } from "@/types/summary";
+import {
+  DETAIL_LEVEL_CONFIG,
+  TEMPLATE_REGISTRY,
+  type SummaryTemplate
+} from "@/types/summary";
 
 interface GenerateSummaryModalProps {
   open: boolean;
@@ -18,13 +22,13 @@ interface GenerateSummaryModalProps {
 }
 
 const TEMPLATE_ICONS: Record<SummaryTemplate, string> = {
-  general: "📄",
-  interview: "🎤",
+  general: "📚",
+  interview: "🎙️",
   travel: "✈️",
-  academic: "🎓",
-  tutorial: "📚",
+  academic: "📗",
+  tutorial: "📘",
   news: "📰",
-  meeting: "📝",
+  meeting: "📋",
   podcast: "🎧",
   review: "⭐",
   vlog: "📹"
@@ -43,6 +47,27 @@ const TEMPLATES: SummaryTemplate[] = [
   "vlog"
 ];
 
+const DETAIL_OPTIONS = [
+  {
+    value: "brief",
+    label: DETAIL_LEVEL_CONFIG.concise.label,
+    targetWords: DETAIL_LEVEL_CONFIG.concise.targetWords,
+    instruction: DETAIL_LEVEL_CONFIG.concise.instruction
+  },
+  {
+    value: "standard",
+    label: DETAIL_LEVEL_CONFIG.standard.label,
+    targetWords: DETAIL_LEVEL_CONFIG.standard.targetWords,
+    instruction: DETAIL_LEVEL_CONFIG.standard.instruction
+  },
+  {
+    value: "detailed",
+    label: DETAIL_LEVEL_CONFIG.detailed.label,
+    targetWords: DETAIL_LEVEL_CONFIG.detailed.targetWords,
+    instruction: DETAIL_LEVEL_CONFIG.detailed.instruction
+  }
+] as const;
+
 export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSummaryModalProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<SummaryTemplate>("general");
   const [language, setLanguage] = useState("zh");
@@ -56,8 +81,10 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
     return null;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const selectedDetailOption = DETAIL_OPTIONS.find((option) => option.value === detail) ?? DETAIL_OPTIONS[1];
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     onConfirm({
       template: selectedTemplate,
       language,
@@ -72,16 +99,15 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="flex h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border bg-white">
-        {/* Header */}
         <div className="flex-shrink-0 border-b px-6 py-4">
           <h3 className="text-lg font-semibold text-zinc-900">生成总结</h3>
-          <p className="mt-1 text-sm text-zinc-500">选择模板和配置，AI 将为您生成专业总结</p>
+          <p className="mt-1 text-sm text-zinc-500">
+            选择模板和输出档位，AI 会按对应字数范围生成总结。
+          </p>
         </div>
 
-        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <form id="summary-form" onSubmit={handleSubmit} className="space-y-6">
-            {/* Template Selection */}
             <div>
               <label className="mb-3 block text-sm font-medium text-zinc-700">
                 选择模板
@@ -90,6 +116,7 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
                 {TEMPLATES.map((templateKey) => {
                   const template = TEMPLATE_REGISTRY[templateKey];
                   const isSelected = selectedTemplate === templateKey;
+
                   return (
                     <button
                       key={templateKey}
@@ -112,17 +139,15 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
               </p>
             </div>
 
-            {/* Output Settings - Horizontal Layout */}
             <div>
               <label className="mb-3 block text-sm font-medium text-zinc-700">
                 输出设置
               </label>
               <div className="flex flex-wrap gap-3">
-                {/* Language */}
-                <div className="flex-1 min-w-[140px]">
+                <div className="min-w-[140px] flex-1">
                   <select
                     value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
+                    onChange={(event) => setLanguage(event.target.value)}
                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none"
                   >
                     <option value="zh">简体中文</option>
@@ -130,22 +155,25 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
                   </select>
                 </div>
 
-                {/* Detail Level */}
-                <div className="flex-1 min-w-[140px]">
+                <div className="min-w-[180px] flex-1">
                   <select
                     value={detail}
-                    onChange={(e) => setDetail(e.target.value as "brief" | "standard" | "detailed")}
+                    onChange={(event) => setDetail(event.target.value as "brief" | "standard" | "detailed")}
                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none"
                   >
-                    <option value="brief">简洁</option>
-                    <option value="standard">标准</option>
-                    <option value="detailed">详细</option>
+                    {DETAIL_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label} ({option.targetWords} 字)
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
+              <p className="mt-2 text-xs text-zinc-500">
+                {selectedDetailOption.instruction}
+              </p>
             </div>
 
-            {/* Display Options */}
             <div>
               <label className="mb-3 block text-sm font-medium text-zinc-700">
                 显示选项
@@ -155,7 +183,7 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
                   <input
                     type="checkbox"
                     checked={showTimestamp}
-                    onChange={(e) => setShowTimestamp(e.target.checked)}
+                    onChange={(event) => setShowTimestamp(event.target.checked)}
                     className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
                   />
                   <span className="text-sm text-zinc-700">显示时间戳</span>
@@ -164,7 +192,7 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
                   <input
                     type="checkbox"
                     checked={showEmoji}
-                    onChange={(e) => setShowEmoji(e.target.checked)}
+                    onChange={(event) => setShowEmoji(event.target.checked)}
                     className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
                   />
                   <span className="text-sm text-zinc-700">显示 Emoji</span>
@@ -173,7 +201,7 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
                   <input
                     type="checkbox"
                     checked={translateSubtitles}
-                    onChange={(e) => setTranslateSubtitles(e.target.checked)}
+                    onChange={(event) => setTranslateSubtitles(event.target.checked)}
                     className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
                   />
                   <span className="text-sm text-zinc-700">翻译字幕</span>
@@ -183,7 +211,7 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
                 <div className="mt-3">
                   <select
                     value={subtitleTargetLanguage}
-                    onChange={(e) => setSubtitleTargetLanguage(e.target.value)}
+                    onChange={(event) => setSubtitleTargetLanguage(event.target.value)}
                     className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none"
                   >
                     <option value="zh">翻译成中文</option>
@@ -195,7 +223,6 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
           </form>
         </div>
 
-        {/* Footer - Fixed at bottom */}
         <div className="flex-shrink-0 border-t bg-white px-6 py-4">
           <div className="flex justify-end gap-3">
             <button

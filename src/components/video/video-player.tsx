@@ -70,16 +70,18 @@ export function VideoPlayer({ videoUrl, platform, currentTime, onTimeUpdate }: V
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
-      <iframe
-        key={embedUrlWithTime}
-        ref={iframeRef}
-        src={embedUrlWithTime}
-        className="h-full w-full border-0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        title="Video Player"
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-      />
+      {embedUrlWithTime && (
+        <iframe
+          key={embedUrlWithTime}
+          ref={iframeRef}
+          src={embedUrlWithTime}
+          className="h-full w-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title="Video Player"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        />
+      )}
     </div>
   );
 }

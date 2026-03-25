@@ -685,6 +685,94 @@
   - 新建：`src/lib/utils/time.ts`、`src/components/summary/templates/meta-info-card.tsx`
   - 修改：`src/lib/services/llm/prompt-builder.ts`、`src/components/summary/templates/generic-summary-template.tsx`、`src/components/summary/templates/travel-summary-template.tsx`、`src/components/summary/templates/academic-summary-template.tsx`
 
+## 2026-03-24
+
+### 新增：改进二 - 总结模板系统完善（7个新模板组件 + 数据结构扩展）
+
+**功能描述**：
+补全7个缺失的总结模板展示组件，让每个模板在展示层有首版差异化，并扩展数据类型支持模板特定的结构化数据。
+
+**本次新增**：
+
+#### 1. 数据结构扩展（`src/types/summary.ts`）
+- 新增 `TemplateData` 接口：包含 interview、tutorial、news、meeting、podcast、review、vlog 7个模板的专用数据结构
+- 每个模板数据结构定义了该类型总结特有的字段（如 interview 的 coreTopics/keyOpinions/quotes/dialogueFlow）
+- `SummaryStructured` 扩展可选的 `templateData` 字段，用于存储模板特定的结构化数据
+
+#### 2. 7个模板展示组件（`src/components/summary/templates/`）
+所有新组件遵循统一模式：Header + MetaInfoCard + 模板特定模块 + Tags + Markdown + Timestamp
+
+- **interview-summary-template.tsx**（访谈总结）
+  - 颜色主题：amber/orange（温暖、对话感）
+  - 特色模块：核心议题、关键观点、金句摘录、对话脉络
+  - 金句使用引用块样式，对话感强
+
+- **tutorial-summary-template.tsx**（教程学习）
+  - 颜色主题：emerald/green（清晰、步骤感）
+  - 特色模块：学习目标、前置准备、步骤时间线、关键参数、常见错误
+  - 步骤使用带序号的垂直时间线，可执行性强
+
+- **news-summary-template.tsx**（新闻报道）
+  - 颜色主题：slate/gray（克制、新闻感）
+  - 特色模块：5W1H信息卡、事件背景、关键进展、影响分析、争议点
+  - 5W1H使用彩色边框卡片，信息密度高
+
+- **meeting-summary-template.tsx**（会议记录）
+  - 颜色主题：blue（专业、决策高亮）
+  - 特色模块：会议概览、讨论议题、决策项、行动项、待确认问题
+  - 决策项和行动项使用高亮边框和背景，突出关键信息
+
+- **podcast-summary-template.tsx**（播客访谈）
+  - 颜色主题：purple（轻松、观点整理）
+  - 特色模块：本期主题、主要观点、对话主线、金句与亮点、听后启发
+  - 比 interview 更松弛，适合长内容回顾
+
+- **review-summary-template.tsx**（评测分析）
+  - 颜色主题：rose（主色），green/red 区分优缺点
+  - 特色模块：评测对象、优点（绿色）、缺点（红色）、适合谁、不适合谁、最终结论
+  - 优缺点使用左右分栏，视觉对比鲜明
+
+- **vlog-summary-template.tsx**（Vlog时间线）
+  - 颜色主题：cyan/teal（轻松、时间线感）
+  - 特色模块：氛围标签、时间线（带连接线）、主要经历、亮点片段、总体感受
+  - 时间线使用左侧竖线和圆点，有呼吸感
+
+#### 3. 模板路由扩展（`src/components/summary/summary-template-router.tsx`）
+- 新增7个模板的路由分支
+- 路由规则：interview/tutorial/news/meeting/podcast/review/vlog -> 对应组件
+- 保留兜底逻辑：未知模板 fallback 到 general
+
+#### 4. 兼容性与兜底
+- 所有新组件保持与原有3个模板相同的 Props 接口
+- 模板特定数据缺失时，组件优雅降级，继续渲染 Markdown 正文
+- 旧数据（无 templateData）通过 Markdown 正文正常显示
+- 复制/下载功能保持可用
+
+**设计原则**：
+- 模板化展示优先，Markdown兜底：模板组件负责页面结构，MarkdownRenderer负责正文渲染
+- 通用骨架 + 模块差异化：优先复用通用组件，通过模块顺序、标题、强调区块、少量视觉风格体现差异
+- 首版可用，不追求完美：目标是结构明显区分，用户一眼能看出不同模板的用途
+
+**文件变更汇总**：
+- 修改：
+  - `src/types/summary.ts`：扩展 TemplateData 和 SummaryStructured 类型
+  - `src/components/summary/summary-template-router.tsx`：添加7个模板路由
+- 新建：
+  - `src/components/summary/templates/interview-summary-template.tsx`
+  - `src/components/summary/templates/tutorial-summary-template.tsx`
+  - `src/components/summary/templates/news-summary-template.tsx`
+  - `src/components/summary/templates/meeting-summary-template.tsx`
+  - `src/components/summary/templates/podcast-summary-template.tsx`
+  - `src/components/summary/templates/review-summary-template.tsx`
+  - `src/components/summary/templates/vlog-summary-template.tsx`
+
+**验收结果**：
+- `npm run lint` 通过（1个警告，formatDuration未使用，已移除）
+- `npm run build` 通过
+- 10个模板（原有3个+新增7个）均有专用展示组件
+- 模板路由正确分发，fallback逻辑正常
+- 复制/下载功能保持可用
+
 ## 2026-03-11
 
 ### 新增：Milestone 4 - 视频问答 RAG 系统 + 字幕翻译功能

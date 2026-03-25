@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { QAChatRequest, QAChatResponse, QAMessage, SubtitleReference } from "@/types";
 import { getHistoryById } from "@/lib/server/sidebar-store";
 import { createSession, getSession, addMessage } from "@/lib/server/qa-store";
-import { SubtitleChunker } from "@/lib/services/rag";
+import { createSubtitleChunker } from "@/lib/services/rag";
 import { createLLMProvider } from "@/lib/services/llm";
 import { getRuntimeConfig } from "@/lib/server/runtime-config-store";
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     };
     addMessage(session.id, userMessage);
 
-    const chunker = new SubtitleChunker();
+    const chunker = createSubtitleChunker(options?.chunking);
     const chunks = history.subtitlesArray
       ? chunker.chunk(history.subtitlesArray)
       : [];

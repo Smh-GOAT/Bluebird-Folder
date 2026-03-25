@@ -7,9 +7,46 @@ export interface SubtitleChunk {
   end: number;
 }
 
+/**
+ * 字幕分段规则配置
+ */
+export interface ChunkingRules {
+  /** 目标分段大小（字符数），默认 200 */
+  targetChunkSize?: number;
+  /** 最小分段大小（字符数），默认 40 */
+  minChunkSize?: number;
+  /** 最大持续时间（秒），默认不限制 */
+  maxDurationSeconds?: number;
+  /** 优先在句子边界分段，默认 false */
+  preferSentenceBoundary?: boolean;
+  /** 保留说话人变化（预留），默认 false */
+  preserveSpeakerChanges?: boolean;
+  /** 每段最大句子数，默认不限制 */
+  maxSentencesPerChunk?: number;
+}
+
+/**
+ * 默认分段规则
+ */
+export const DEFAULT_CHUNKING_RULES: ChunkingRules = {
+  targetChunkSize: 200,
+  minChunkSize: 40,
+  maxDurationSeconds: undefined,
+  preferSentenceBoundary: false,
+  preserveSpeakerChanges: false,
+  maxSentencesPerChunk: undefined
+};
+
 export class SubtitleChunker {
-  private targetChunkSize = 200;
-  private minChunkSize = 40;
+  private targetChunkSize: number;
+  private minChunkSize: number;
+  private rules: ChunkingRules;
+
+  constructor(rules?: ChunkingRules) {
+    this.rules = { ...DEFAULT_CHUNKING_RULES, ...rules };
+    this.targetChunkSize = this.rules.targetChunkSize!;
+    this.minChunkSize = this.rules.minChunkSize!;
+  }
 
   chunk(subtitles: SubtitleSegment[]): SubtitleChunk[] {
     if (subtitles.length === 0) return [];
@@ -25,22 +62,46 @@ export class SubtitleChunker {
     const chunks: SubtitleChunk[] = [];
     let currentChunk: SubtitleSegment[] = [];
     let currentText = "";
+    let currentSentenceCount = 0;
+    let chunkStartTime = 0;
 
     for (let i = 0; i < subtitles.length; i++) {
       const segment = subtitles[i];
+      const isFirstSegment = currentChunk.length === 0;
 
-      if (currentText.length === 0) {
+      if (isFirstSegment) {
         currentChunk.push(segment);
         currentText = segment.text;
-      } else if (currentText.length + segment.text.length <= this.targetChunkSize) {
-        currentChunk.push(segment);
-        currentText += segment.text;
-      } else {
+        chunkStartTime = segment.start;
+        currentSentenceCount = this.countSentences(segment.text);
+        continue;
+      }
+
+      const newTextLength = currentText.length + segment.text.length;
+      const duration = segment.end - chunkStartTime;
+      const newSentenceCount = currentSentenceCount + this.countSentences(segment.text);
+
+      const shouldBreak = this.shouldBreakChunk({
+        currentLength: currentText.length,
+        newLength: newTextLength,
+        duration,
+        newSentenceCount,
+        nextSegment: segment,
+        isLastSegment: i === subtitles.length - 1
+      });
+
+      if (shouldBreak) {
         if (currentChunk.length > 0) {
           chunks.push(this.createChunk(chunks.length, currentChunk, currentText));
         }
         currentChunk = [segment];
         currentText = segment.text;
+        chunkStartTime = segment.start;
+        currentSentenceCount = this.countSentences(segment.text);
+      } else {
+        currentChunk.push(segment);
+        currentText += segment.text;
+        currentSentenceCount = newSentenceCount;
       }
     }
 
@@ -61,6 +122,53 @@ export class SubtitleChunker {
     }
 
     return chunks;
+  }
+
+  private shouldBreakChunk(params: {
+    currentLength: number;
+    newLength: number;
+    duration: number;
+    newSentenceCount: number;
+    nextSegment: SubtitleSegment;
+    isLastSegment: boolean;
+  }): boolean {
+    const { newLength, duration, newSentenceCount, nextSegment } = params;
+
+    if (this.rules.maxDurationSeconds && duration >= this.rules.maxDurationSeconds) {
+      return true;
+    }
+
+    if (this.rules.maxSentencesPerChunk && newSentenceCount > this.rules.maxSentencesPerChunk) {
+      return true;
+    }
+
+    if (newLength >= this.targetChunkSize) {
+      if (this.rules.preferSentenceBoundary) {
+        if (this.isSentenceEnd(nextSegment.text)) {
+          return true;
+        }
+        if (newLength > this.targetChunkSize * 1.2) {
+          return true;
+        }
+        return false;
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  private isSentenceEnd(text: string): boolean {
+    const trimmed = text.trim();
+    if (trimmed.length === 0) return false;
+    const lastChar = trimmed[trimmed.length - 1];
+    const sentenceEndChars = new Set(["。", "！", "？", "!", "?", "."]);
+    return sentenceEndChars.has(lastChar);
+  }
+
+  private countSentences(text: string): number {
+    const matches = text.match(/[。！？.!?]+/g);
+    return matches ? matches.length : 1;
   }
 
   private createChunk(index: number, segments: SubtitleSegment[], text: string): SubtitleChunk {

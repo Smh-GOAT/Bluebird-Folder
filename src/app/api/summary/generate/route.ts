@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getHistoryById, saveHistory } from "@/lib/server/sidebar-store";
 import { createLLMProvider } from "@/lib/services/llm";
-import type { LLMProviderType, SummaryTemplate, SummaryStructured } from "@/types/summary";
+import type {
+  LLMProviderType,
+  SummaryDetailLevel,
+  SummaryTemplate,
+  SummaryStructured
+} from "@/types/summary";
 
 const DEFAULT_PROVIDER: LLMProviderType = "qwen";
 const DEFAULT_MODELS: Record<LLMProviderType, string> = {
@@ -17,7 +22,7 @@ export async function POST(request: NextRequest) {
       historyId: string;
       template?: string;
       language?: string;
-      detail?: "brief" | "standard" | "detailed";
+      detail?: SummaryDetailLevel;
       showTimestamp?: boolean;
       showEmoji?: boolean;
     };

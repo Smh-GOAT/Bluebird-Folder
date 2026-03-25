@@ -1,7 +1,7 @@
-import { SubtitleChunker } from "./subtitle-chunker";
+import { SubtitleChunker, type ChunkingRules } from "./subtitle-chunker";
 
 export * from "./subtitle-chunker";
 
-export function createSubtitleChunker(): SubtitleChunker {
-  return new SubtitleChunker();
+export function createSubtitleChunker(rules?: ChunkingRules): SubtitleChunker {
+  return new SubtitleChunker(rules);
 }

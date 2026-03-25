@@ -19,6 +19,77 @@ export interface SummaryOverview {
   platform?: string | null;
 }
 
+// Template-specific data structures
+export interface InterviewData {
+  coreTopics?: string[];
+  keyOpinions?: string[];
+  quotes?: string[];
+  dialogueFlow?: string;
+}
+
+export interface TutorialData {
+  learningGoal?: string;
+  prerequisites?: string[];
+  steps?: Array<{ title: string; description: string }>;
+  keyParams?: string[];
+  commonMistakes?: string[];
+}
+
+export interface NewsData {
+  what?: string;
+  who?: string;
+  when?: string;
+  where?: string;
+  why?: string;
+  how?: string;
+  background?: string;
+  progress?: string;
+  impact?: string;
+  controversies?: string[];
+}
+
+export interface MeetingData {
+  topics?: string[];
+  decisions?: string[];
+  actionItems?: Array<{ task: string; assignee?: string; deadline?: string }>;
+  pendingQuestions?: string[];
+}
+
+export interface PodcastData {
+  theme?: string;
+  mainOpinions?: string[];
+  dialogueThread?: string;
+  highlights?: string[];
+  inspiration?: string;
+}
+
+export interface ReviewData {
+  subject?: string;
+  pros?: string[];
+  cons?: string[];
+  suitableFor?: string;
+  notSuitableFor?: string;
+  conclusion?: string;
+}
+
+export interface VlogData {
+  timeline?: Array<{ time: string; event: string }>;
+  experiences?: string[];
+  highlights?: string[];
+  mood?: string;
+  overallFeeling?: string;
+}
+
+export interface TemplateData {
+  interview?: InterviewData;
+  tutorial?: TutorialData;
+  news?: NewsData;
+  meeting?: MeetingData;
+  podcast?: PodcastData;
+  review?: ReviewData;
+  vlog?: VlogData;
+}
+
 export interface SummaryStructured {
   overview: SummaryOverview;
   keyPoints: SummaryKeyPoint[];
@@ -30,6 +101,7 @@ export interface SummaryStructured {
     language?: string | null;
     model?: string | null;
   } | null;
+  templateData?: TemplateData;
 }
 
 export interface SummaryOutput {
@@ -41,7 +113,7 @@ export interface GenerateSummaryParams {
   historyId: string;
   template?: SummaryTemplate;
   language?: string;
-  detail?: "brief" | "standard" | "detailed";
+  detail?: SummaryDetailLevel;
   showTimestamp?: boolean;
   showEmoji?: boolean;
 }
@@ -57,6 +129,8 @@ export type SummaryTemplate =
   | "podcast"      // 播客访谈
   | "review"       // 评测分析
   | "vlog";        // Vlog 时间线
+
+export type SummaryDetailLevel = "brief" | "concise" | "standard" | "detailed";
 
 export type LLMProviderType = "kimi" | "openai" | "anthropic" | "qwen";
 
@@ -74,6 +148,8 @@ export interface LLMResult {
   rawText: string;
   structured?: SummaryStructured;
   markdown?: string;
+  wordCountValidation?: WordCountValidation;
+  warning?: string;
   usage?: {
     promptTokens: number;
     completionTokens: number;
@@ -93,9 +169,24 @@ export interface PromptBuildParams {
   };
   template?: SummaryTemplate;
   language?: string;
-  detail?: "brief" | "standard" | "detailed";
+  detail?: SummaryDetailLevel;
   showTimestamp?: boolean;
   showEmoji?: boolean;
+}
+
+export interface DetailLevelConfig {
+  label: string;
+  targetWords: string;
+  instruction: string;
+}
+
+export interface WordCountValidation {
+  valid: boolean;
+  actual: number;
+  expectedRange: string;
+  min: number;
+  max: number;
+  message?: string;
 }
 
 export interface TemplateInfo {
@@ -103,6 +194,24 @@ export interface TemplateInfo {
   description: string;
   promptFocus: string;
 }
+
+export const DETAIL_LEVEL_CONFIG: Record<"concise" | "standard" | "detailed", DetailLevelConfig> = {
+  concise: {
+    label: "简洁",
+    targetWords: "300-450",
+    instruction: "仅保留最重要的信息，减少展开，控制小节数量，每节用1-2句话概括，避免冗长描述。"
+  },
+  standard: {
+    label: "普通",
+    targetWords: "600-900",
+    instruction: "保持完整结构，适度展开每个部分，兼顾概览与细节，确保可读性和信息完整性。"
+  },
+  detailed: {
+    label: "具体",
+    targetWords: "1200-1800",
+    instruction: "在保持模板结构不变的前提下充分展开内容，补充步骤、背景、论证、例子或注意事项，但避免重复表达。"
+  }
+};
 
 export const TEMPLATE_REGISTRY: Record<SummaryTemplate, TemplateInfo> = {
   general: {

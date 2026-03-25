@@ -1,26 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SummaryTemplateRouter } from "./summary-template-router";
-import type { SummaryStructured, SummaryTemplate } from "@/types/summary";
+import { countSummaryWords } from "@/lib/services/llm/parser";
+import {
+  DETAIL_LEVEL_CONFIG,
+  type SummaryDetailLevel,
+  type SummaryStructured,
+  type SummaryTemplate
+} from "@/types/summary";
 
 interface SummaryDisplayProps {
   summaryJson?: SummaryStructured | null;
   summaryMarkdown?: string | null;
   summaryTemplate?: SummaryTemplate | string | null;
+  summaryDetail?: SummaryDetailLevel;
+}
+
+function normalizeDetailLevel(detail: SummaryDetailLevel = "standard"): "concise" | "standard" | "detailed" {
+  if (detail === "brief") {
+    return "concise";
+  }
+
+  return detail;
+}
+
+function parseWordRange(range: string): { min: number; max: number } {
+  const match = range.match(/(\d+)\s*-\s*(\d+)/);
+  if (!match) {
+    return { min: 0, max: Number.MAX_SAFE_INTEGER };
+  }
+
+  return {
+    min: Number(match[1]),
+    max: Number(match[2])
+  };
 }
 
 export function SummaryDisplay({
   summaryJson,
   summaryMarkdown,
-  summaryTemplate
+  summaryTemplate,
+  summaryDetail = "standard"
 }: SummaryDisplayProps) {
   const [showJson, setShowJson] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
   const [copiedMarkdown, setCopiedMarkdown] = useState(false);
 
+  const normalizedDetail = normalizeDetailLevel(summaryDetail);
+  const detailConfig = DETAIL_LEVEL_CONFIG[normalizedDetail];
+  const actualWordCount = useMemo(() => {
+    if (!summaryMarkdown) {
+      return 0;
+    }
+
+    return countSummaryWords(summaryMarkdown);
+  }, [summaryMarkdown]);
+  const wordRange = useMemo(() => parseWordRange(detailConfig.targetWords), [detailConfig.targetWords]);
+
+  const wordCountState = useMemo(() => {
+    if (actualWordCount === 0) {
+      return {
+        tone: "neutral" as const,
+        label: "未统计"
+      };
+    }
+
+    if (actualWordCount < wordRange.min) {
+      return {
+        tone: "warn" as const,
+        label: "字数偏少"
+      };
+    }
+
+    if (actualWordCount > wordRange.max) {
+      return {
+        tone: "warn" as const,
+        label: "字数偏多"
+      };
+    }
+
+    return {
+      tone: "ok" as const,
+      label: "字数达标"
+    };
+  }, [actualWordCount, wordRange.max, wordRange.min]);
+
+  const wordCountClasses = {
+    neutral: "border-zinc-200 bg-zinc-50 text-zinc-600",
+    ok: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    warn: "border-amber-200 bg-amber-50 text-amber-700"
+  } satisfies Record<typeof wordCountState.tone, string>;
+
+  const effectiveTemplate = (summaryTemplate ??
+    summaryJson?.meta?.template ??
+    "general") as SummaryTemplate;
+
   const handleCopyJson = async () => {
-    if (!summaryJson) return;
+    if (!summaryJson) {
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(JSON.stringify(summaryJson, null, 2));
       setCopiedJson(true);
@@ -31,7 +111,10 @@ export function SummaryDisplay({
   };
 
   const handleCopyMarkdown = async () => {
-    if (!summaryMarkdown) return;
+    if (!summaryMarkdown) {
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(summaryMarkdown);
       setCopiedMarkdown(true);
@@ -43,6 +126,20 @@ export function SummaryDisplay({
 
   return (
     <div className="space-y-3">
+      {summaryMarkdown && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${wordCountClasses[wordCountState.tone]}`}>
+            {wordCountState.label}
+          </div>
+          <div className="text-xs text-zinc-500">
+            字数 {actualWordCount} / 目标 {detailConfig.targetWords}
+          </div>
+          <div className="text-xs text-zinc-400">
+            档位：{detailConfig.label}
+          </div>
+        </div>
+      )}
+
       {summaryJson && (
         <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-2.5">
           <div className="mb-2 flex items-center justify-between">
@@ -96,7 +193,7 @@ export function SummaryDisplay({
         </div>
 
         <SummaryTemplateRouter
-          template={summaryTemplate}
+          template={effectiveTemplate}
           summaryJson={summaryJson}
           summaryMarkdown={summaryMarkdown}
         />

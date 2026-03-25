@@ -1,8 +1,7 @@
-import type { LLMGenerateParams, LLMResult } from "@/types/summary";
 import type { QAMessage, SubtitleReference } from "@/types";
-import { parseLLMResponse } from "./parser";
-import { buildPrompt, buildMarkdownFromStructured, buildQAPrompt } from "./prompt-builder";
-import type { PromptBuildParams } from "@/types/summary";
+import type { LLMGenerateParams, LLMResult, PromptBuildParams } from "@/types/summary";
+import { parseLLMResponse, validateWordCount } from "./parser";
+import { buildMarkdownFromStructured, buildPrompt, buildQAPrompt } from "./prompt-builder";
 
 interface OpenAICompatibleResponse {
   id: string;
@@ -59,13 +58,13 @@ export class LLMProvider {
 
     switch (this.params.provider) {
       case "kimi":
-        return this.callKimi(prompt);
+        return this.callKimi(prompt, promptParams);
       case "openai":
-        return this.callOpenAI(prompt);
+        return this.callOpenAI(prompt, promptParams);
       case "anthropic":
-        return this.callAnthropic(prompt);
+        return this.callAnthropic(prompt, promptParams);
       case "qwen":
-        return this.callQwen(prompt);
+        return this.callQwen(prompt, promptParams);
       default:
         return {
           rawText: "",
@@ -91,10 +90,10 @@ export class LLMProvider {
     const result = await this.callWithSystem(
       prompt,
       "你是一位专业的视频内容问答助手。请严格遵守以下规则：\n" +
-      "1. 只基于提供的字幕片段回答问题，不要编造信息\n" +
-      "2. 如果字幕中没有足够信息，明确回答「根据字幕无法回答此问题」\n" +
-      "3. 回答要准确、简洁，引用时使用 [MM:SS] 时间戳格式\n" +
-      "4. 不要过度推断，只陈述字幕中明确提到的内容"
+      "1. 只基于提供的字幕片段回答问题，不要编造信息。\n" +
+      "2. 如果字幕中没有足够信息，明确回答“根据字幕无法回答此问题”。\n" +
+      "3. 回答要准确、简洁，引用时使用 [MM:SS] 时间戳格式。\n" +
+      "4. 不要过度推断，只陈述字幕中明确提到的内容。"
     );
 
     if (!result.success) {
@@ -116,7 +115,7 @@ export class LLMProvider {
   async translateSubtitles(prompt: string): Promise<TranslationResult> {
     const result = await this.callWithSystem(
       prompt,
-      "你是一位专业的字幕翻译助手。请严格按照要求的格式输出翻译结果，保持时间戳和索引不变。"
+      "你是一位专业的字幕翻译助手。请严格按要求输出，保持时间戳和索引不变。"
     );
 
     if (!result.success) {
@@ -155,6 +154,35 @@ export class LLMProvider {
     }
   }
 
+  private createSummaryResult(
+    content: string,
+    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+    promptParams: PromptBuildParams
+  ): LLMResult {
+    const parsed = parseLLMResponse(content);
+
+    if (!parsed.success || !parsed.structured) {
+      return {
+        rawText: content,
+        success: false,
+        error: parsed.error ?? "解析 LLM 响应失败"
+      };
+    }
+
+    const markdown = buildMarkdownFromStructured(parsed.structured);
+    const wordCountValidation = validateWordCount(markdown, promptParams.detail ?? "standard");
+
+    return {
+      rawText: content,
+      structured: parsed.structured,
+      markdown,
+      wordCountValidation,
+      warning: wordCountValidation.valid ? undefined : wordCountValidation.message,
+      usage,
+      success: true
+    };
+  }
+
   private async callKimiRaw(
     prompt: string,
     systemContent: string,
@@ -187,14 +215,11 @@ export class LLMProvider {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Kimi API 错误 (${response.status}): ${errorText}`);
+        throw new Error(`Kimi API 错误 (${response.status}): ${await response.text()}`);
       }
 
       const data = (await response.json()) as OpenAICompatibleResponse;
-      const content = data.choices[0]?.message?.content ?? "";
-
-      return { content, success: true };
+      return { content: data.choices[0]?.message?.content ?? "", success: true };
     } catch (error) {
       if (retryCount < MAX_RETRIES && this.shouldRetry(error)) {
         await this.delay(RETRY_DELAY * (retryCount + 1));
@@ -241,14 +266,11 @@ export class LLMProvider {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenAI API 错误 (${response.status}): ${errorText}`);
+        throw new Error(`OpenAI API 错误 (${response.status}): ${await response.text()}`);
       }
 
       const data = (await response.json()) as OpenAICompatibleResponse;
-      const content = data.choices[0]?.message?.content ?? "";
-
-      return { content, success: true };
+      return { content: data.choices[0]?.message?.content ?? "", success: true };
     } catch (error) {
       if (retryCount < MAX_RETRIES && this.shouldRetry(error)) {
         await this.delay(RETRY_DELAY * (retryCount + 1));
@@ -294,17 +316,15 @@ export class LLMProvider {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Anthropic API 错误 (${response.status}): ${errorText}`);
+        throw new Error(`Anthropic API 错误 (${response.status}): ${await response.text()}`);
       }
 
       const data = (await response.json()) as {
         content: Array<{ type: string; text: string }>;
         usage: { input_tokens: number; output_tokens: number };
       };
-      const content = data.content[0]?.text ?? "";
 
-      return { content, success: true };
+      return { content: data.content[0]?.text ?? "", success: true };
     } catch (error) {
       if (retryCount < MAX_RETRIES && this.shouldRetry(error)) {
         await this.delay(RETRY_DELAY * (retryCount + 1));
@@ -351,14 +371,11 @@ export class LLMProvider {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Qwen API 错误 (${response.status}): ${errorText}`);
+        throw new Error(`Qwen API 错误 (${response.status}): ${await response.text()}`);
       }
 
       const data = (await response.json()) as OpenAICompatibleResponse;
-      const content = data.choices[0]?.message?.content ?? "";
-
-      return { content, success: true };
+      return { content: data.choices[0]?.message?.content ?? "", success: true };
     } catch (error) {
       if (retryCount < MAX_RETRIES && this.shouldRetry(error)) {
         await this.delay(RETRY_DELAY * (retryCount + 1));
@@ -373,7 +390,11 @@ export class LLMProvider {
     }
   }
 
-  private async callKimi(prompt: string, retryCount = 0): Promise<LLMResult> {
+  private async callKimi(
+    prompt: string,
+    promptParams: PromptBuildParams,
+    retryCount = 0
+  ): Promise<LLMResult> {
     const baseUrl = this.params.baseUrl ?? "https://api.moonshot.cn/v1";
 
     try {
@@ -391,7 +412,7 @@ export class LLMProvider {
           messages: [
             {
               role: "system",
-              content: "你是一个专业的视频内容分析师，擅长从字幕中提取结构化信息。请严格按照要求的 JSON 格式输出。"
+              content: "你是一位专业的视频内容分析师，请严格按要求输出 JSON。"
             },
             { role: "user", content: prompt }
           ],
@@ -404,38 +425,23 @@ export class LLMProvider {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Kimi API 错误 (${response.status}): ${errorText}`);
+        throw new Error(`Kimi API 错误 (${response.status}): ${await response.text()}`);
       }
 
       const data = (await response.json()) as OpenAICompatibleResponse;
-      const content = data.choices[0]?.message?.content ?? "";
-
-      const parsed = parseLLMResponse(content);
-
-      if (parsed.success && parsed.structured) {
-        return {
-          rawText: content,
-          structured: parsed.structured,
-          markdown: buildMarkdownFromStructured(parsed.structured),
-          usage: {
-            promptTokens: data.usage.prompt_tokens,
-            completionTokens: data.usage.completion_tokens,
-            totalTokens: data.usage.total_tokens
-          },
-          success: true
-        };
-      }
-
-      return {
-        rawText: content,
-        success: false,
-        error: parsed.error ?? "解析 LLM 响应失败"
-      };
+      return this.createSummaryResult(
+        data.choices[0]?.message?.content ?? "",
+        {
+          promptTokens: data.usage.prompt_tokens,
+          completionTokens: data.usage.completion_tokens,
+          totalTokens: data.usage.total_tokens
+        },
+        promptParams
+      );
     } catch (error) {
       if (retryCount < MAX_RETRIES && this.shouldRetry(error)) {
         await this.delay(RETRY_DELAY * (retryCount + 1));
-        return this.callKimi(prompt, retryCount + 1);
+        return this.callKimi(prompt, promptParams, retryCount + 1);
       }
 
       return {
@@ -446,7 +452,11 @@ export class LLMProvider {
     }
   }
 
-  private async callOpenAI(prompt: string, retryCount = 0): Promise<LLMResult> {
+  private async callOpenAI(
+    prompt: string,
+    promptParams: PromptBuildParams,
+    retryCount = 0
+  ): Promise<LLMResult> {
     const baseUrl = this.params.baseUrl ?? "https://api.openai.com/v1";
 
     try {
@@ -464,7 +474,7 @@ export class LLMProvider {
           messages: [
             {
               role: "system",
-              content: "You are a professional video content analyst. Extract structured information from subtitles and output strictly in the requested JSON format."
+              content: "You are a professional video content analyst. Output strictly valid JSON."
             },
             { role: "user", content: prompt }
           ],
@@ -478,38 +488,23 @@ export class LLMProvider {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenAI API 错误 (${response.status}): ${errorText}`);
+        throw new Error(`OpenAI API 错误 (${response.status}): ${await response.text()}`);
       }
 
       const data = (await response.json()) as OpenAICompatibleResponse;
-      const content = data.choices[0]?.message?.content ?? "";
-
-      const parsed = parseLLMResponse(content);
-
-      if (parsed.success && parsed.structured) {
-        return {
-          rawText: content,
-          structured: parsed.structured,
-          markdown: buildMarkdownFromStructured(parsed.structured),
-          usage: {
-            promptTokens: data.usage.prompt_tokens,
-            completionTokens: data.usage.completion_tokens,
-            totalTokens: data.usage.total_tokens
-          },
-          success: true
-        };
-      }
-
-      return {
-        rawText: content,
-        success: false,
-        error: parsed.error ?? "解析 LLM 响应失败"
-      };
+      return this.createSummaryResult(
+        data.choices[0]?.message?.content ?? "",
+        {
+          promptTokens: data.usage.prompt_tokens,
+          completionTokens: data.usage.completion_tokens,
+          totalTokens: data.usage.total_tokens
+        },
+        promptParams
+      );
     } catch (error) {
       if (retryCount < MAX_RETRIES && this.shouldRetry(error)) {
         await this.delay(RETRY_DELAY * (retryCount + 1));
-        return this.callOpenAI(prompt, retryCount + 1);
+        return this.callOpenAI(prompt, promptParams, retryCount + 1);
       }
 
       return {
@@ -520,7 +515,11 @@ export class LLMProvider {
     }
   }
 
-  private async callAnthropic(prompt: string, retryCount = 0): Promise<LLMResult> {
+  private async callAnthropic(
+    prompt: string,
+    promptParams: PromptBuildParams,
+    retryCount = 0
+  ): Promise<LLMResult> {
     const baseUrl = this.params.baseUrl ?? "https://api.anthropic.com/v1";
 
     try {
@@ -538,7 +537,7 @@ export class LLMProvider {
           model: this.params.model,
           max_tokens: this.params.maxTokens ?? 4000,
           temperature: this.params.temperature,
-          system: "You are a professional video content analyst. Extract structured information from subtitles and output strictly in the requested JSON format.",
+          system: "You are a professional video content analyst. Output strictly valid JSON.",
           messages: [{ role: "user", content: prompt }]
         }),
         signal: controller.signal
@@ -547,41 +546,27 @@ export class LLMProvider {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Anthropic API 错误 (${response.status}): ${errorText}`);
+        throw new Error(`Anthropic API 错误 (${response.status}): ${await response.text()}`);
       }
 
       const data = (await response.json()) as {
         content: Array<{ type: string; text: string }>;
         usage: { input_tokens: number; output_tokens: number };
       };
-      const content = data.content[0]?.text ?? "";
 
-      const parsed = parseLLMResponse(content);
-
-      if (parsed.success && parsed.structured) {
-        return {
-          rawText: content,
-          structured: parsed.structured,
-          markdown: buildMarkdownFromStructured(parsed.structured),
-          usage: {
-            promptTokens: data.usage.input_tokens,
-            completionTokens: data.usage.output_tokens,
-            totalTokens: data.usage.input_tokens + data.usage.output_tokens
-          },
-          success: true
-        };
-      }
-
-      return {
-        rawText: content,
-        success: false,
-        error: parsed.error ?? "解析 LLM 响应失败"
-      };
+      return this.createSummaryResult(
+        data.content[0]?.text ?? "",
+        {
+          promptTokens: data.usage.input_tokens,
+          completionTokens: data.usage.output_tokens,
+          totalTokens: data.usage.input_tokens + data.usage.output_tokens
+        },
+        promptParams
+      );
     } catch (error) {
       if (retryCount < MAX_RETRIES && this.shouldRetry(error)) {
         await this.delay(RETRY_DELAY * (retryCount + 1));
-        return this.callAnthropic(prompt, retryCount + 1);
+        return this.callAnthropic(prompt, promptParams, retryCount + 1);
       }
 
       return {
@@ -592,7 +577,11 @@ export class LLMProvider {
     }
   }
 
-  private async callQwen(prompt: string, retryCount = 0): Promise<LLMResult> {
+  private async callQwen(
+    prompt: string,
+    promptParams: PromptBuildParams,
+    retryCount = 0
+  ): Promise<LLMResult> {
     const baseUrl = this.params.baseUrl ?? "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
     try {
@@ -610,7 +599,7 @@ export class LLMProvider {
           messages: [
             {
               role: "system",
-              content: "你是一个专业的视频内容分析师，擅长从字幕中提取结构化信息。请严格按照要求的 JSON 格式输出。"
+              content: "你是一位专业的视频内容分析师，请严格按要求输出 JSON。"
             },
             { role: "user", content: prompt }
           ],
@@ -623,38 +612,23 @@ export class LLMProvider {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Qwen API 错误 (${response.status}): ${errorText}`);
+        throw new Error(`Qwen API 错误 (${response.status}): ${await response.text()}`);
       }
 
       const data = (await response.json()) as OpenAICompatibleResponse;
-      const content = data.choices[0]?.message?.content ?? "";
-
-      const parsed = parseLLMResponse(content);
-
-      if (parsed.success && parsed.structured) {
-        return {
-          rawText: content,
-          structured: parsed.structured,
-          markdown: buildMarkdownFromStructured(parsed.structured),
-          usage: {
-            promptTokens: data.usage.prompt_tokens,
-            completionTokens: data.usage.completion_tokens,
-            totalTokens: data.usage.total_tokens
-          },
-          success: true
-        };
-      }
-
-      return {
-        rawText: content,
-        success: false,
-        error: parsed.error ?? "解析 LLM 响应失败"
-      };
+      return this.createSummaryResult(
+        data.choices[0]?.message?.content ?? "",
+        {
+          promptTokens: data.usage.prompt_tokens,
+          completionTokens: data.usage.completion_tokens,
+          totalTokens: data.usage.total_tokens
+        },
+        promptParams
+      );
     } catch (error) {
       if (retryCount < MAX_RETRIES && this.shouldRetry(error)) {
         await this.delay(RETRY_DELAY * (retryCount + 1));
-        return this.callQwen(prompt, retryCount + 1);
+        return this.callQwen(prompt, promptParams, retryCount + 1);
       }
 
       return {
@@ -666,11 +640,23 @@ export class LLMProvider {
   }
 
   private shouldRetry(error: unknown): boolean {
-    if (error instanceof Error) {
-      const retryableErrors = ["timeout", "network", "rate limit", "too many requests", "503", "502", "504", "aborted", "abort"];
-      return retryableErrors.some((e) => error.message.toLowerCase().includes(e.toLowerCase()));
+    if (!(error instanceof Error)) {
+      return false;
     }
-    return false;
+
+    const retryableErrors = [
+      "timeout",
+      "network",
+      "rate limit",
+      "too many requests",
+      "503",
+      "502",
+      "504",
+      "aborted",
+      "abort"
+    ];
+
+    return retryableErrors.some((entry) => error.message.toLowerCase().includes(entry.toLowerCase()));
   }
 
   private delay(ms: number): Promise<void> {

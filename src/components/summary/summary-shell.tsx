@@ -12,7 +12,7 @@ import { VideoPlayer } from "@/components/video/video-player";
 import { PlayerPlaceholder } from "@/components/video/player-placeholder";
 import { VideoTimeProvider } from "@/components/summary/video-time-context";
 import type { VideoHistoryItem, SubtitleReference } from "@/types";
-import type { SummaryStructured } from "@/types/summary";
+import type { SummaryDetailLevel, SummaryStructured } from "@/types/summary";
 
 interface SummaryShellProps {
   summaryId: string;
@@ -29,7 +29,7 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
 
   const template = searchParams.get("template") ?? "default";
   const language = searchParams.get("language") ?? "zh";
-  const detail = (searchParams.get("detail") as "brief" | "standard" | "detailed") ?? "standard";
+  const detail = (searchParams.get("detail") as SummaryDetailLevel) ?? "standard";
   const showTimestamp = searchParams.get("showTimestamp") !== "false";
   const showEmoji = searchParams.get("showEmoji") !== "false";
   const shouldTranslate = searchParams.get("translateSubtitles") === "true";
@@ -257,6 +257,8 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
                   translatedSubtitles={history?.translatedSubtitles}
                   summaryMarkdown={history?.summaryMarkdown}
                   summaryJson={history?.summaryJson}
+                  summaryTemplate={template}
+                  summaryDetail={detail}
                 />
               )}
             </aside>

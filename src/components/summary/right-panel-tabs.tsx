@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { SubtitleSegment, SubtitleTranslation } from "@/types";
-import type { SummaryStructured } from "@/types/summary";
+import type { SummaryDetailLevel, SummaryStructured, SummaryTemplate } from "@/types/summary";
 import { SummaryDisplay } from "./summary-display";
 import { SubtitleTranslationToggle } from "./subtitle-translation-toggle";
 import { SubtitleEditor } from "./subtitle-editor";
@@ -14,13 +14,17 @@ interface RightPanelTabsProps {
   translatedSubtitles?: SubtitleTranslation[];
   summaryMarkdown?: string | null;
   summaryJson?: SummaryStructured | null;
+  summaryTemplate?: SummaryTemplate | string | null;
+  summaryDetail?: SummaryDetailLevel;
 }
 
 export function RightPanelTabs({ 
   subtitles, 
   translatedSubtitles,
   summaryMarkdown, 
-  summaryJson 
+  summaryJson,
+  summaryTemplate,
+  summaryDetail
 }: RightPanelTabsProps) {
   const [tab, setTab] = useState<"summary" | "transcript">("summary");
   const [showTranslated, setShowTranslated] = useState(!!translatedSubtitles);
@@ -86,7 +90,12 @@ export function RightPanelTabs({
       <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
         {tab === "summary" ? (
           hasSummary ? (
-            <SummaryDisplay summaryJson={summaryJson} summaryMarkdown={summaryMarkdown} />
+            <SummaryDisplay
+              summaryJson={summaryJson}
+              summaryMarkdown={summaryMarkdown}
+              summaryTemplate={summaryTemplate}
+              summaryDetail={summaryDetail}
+            />
           ) : (
             <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 p-8 text-center">
               <svg

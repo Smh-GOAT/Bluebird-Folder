@@ -25,6 +25,15 @@ export interface QASession {
   updatedAt: string;
 }
 
+export interface QAChunkingOptions {
+  targetChunkSize?: number;
+  minChunkSize?: number;
+  maxDurationSeconds?: number;
+  preferSentenceBoundary?: boolean;
+  preserveSpeakerChanges?: boolean;
+  maxSentencesPerChunk?: number;
+}
+
 // 请求/响应
 export interface QAChatRequest {
   historyId: string;
@@ -33,6 +42,7 @@ export interface QAChatRequest {
   options?: {
     maxReferences?: number;
     temperature?: number;
+    chunking?: QAChunkingOptions;
   };
 }
 
