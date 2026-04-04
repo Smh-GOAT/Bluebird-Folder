@@ -12,72 +12,83 @@ interface MarkdownRendererProps {
 
 const components: Components = {
   h1: ({ children }) => (
-    <h1 className="mb-4 mt-6 text-xl font-semibold text-zinc-900 first:mt-0">
+    <h1 className="mb-4 mt-6 text-xl font-semibold first:mt-0" style={{ color: "var(--text)" }}>
       {children}
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="mb-3 mt-5 text-lg font-semibold text-zinc-800">
+    <h2 className="mb-3 mt-5 text-lg font-semibold" style={{ color: "var(--text)" }}>
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mb-2 mt-4 text-base font-medium text-zinc-800">
+    <h3 className="mb-2 mt-4 text-base font-medium" style={{ color: "var(--text)" }}>
       {children}
     </h3>
   ),
   p: ({ children }) => (
-    <p className="mb-3 leading-7 text-zinc-700 last:mb-0">
+    <p className="mb-3 leading-7 last:mb-0" style={{ color: "var(--text-sec)" }}>
       {children}
     </p>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="mb-4 border-l-4 border-zinc-300 bg-zinc-100/50 py-2 pl-4 text-zinc-600">
+    <blockquote
+      className="mb-4 py-2 pl-4"
+      style={{
+        borderLeft: "3px solid var(--primary)",
+        background: "var(--primary-tint)",
+        color: "var(--text-muted)",
+        borderRadius: "0 var(--radius-xs) var(--radius-xs) 0",
+      }}
+    >
       {children}
     </blockquote>
   ),
   ul: ({ children }) => (
-    <ul className="mb-4 ml-5 list-disc space-y-1.5 text-zinc-700">
+    <ul className="mb-4 ml-5 list-disc space-y-1.5" style={{ color: "var(--text-sec)" }}>
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol className="mb-4 ml-5 list-decimal space-y-1.5 text-zinc-700">
+    <ol className="mb-4 ml-5 list-decimal space-y-1.5" style={{ color: "var(--text-sec)" }}>
       {children}
     </ol>
   ),
-  li: ({ children }) => (
-    <li className="leading-6">
-      {children}
-    </li>
-  ),
+  li: ({ children }) => <li className="leading-6">{children}</li>,
   strong: ({ children }) => (
-    <strong className="font-semibold text-zinc-900">
-      {children}
-    </strong>
+    <strong className="font-semibold" style={{ color: "var(--text)" }}>{children}</strong>
   ),
   em: ({ children }) => (
-    <em className="italic text-zinc-700">
-      {children}
-    </em>
+    <em className="italic" style={{ color: "var(--text-sec)" }}>{children}</em>
   ),
-  hr: () => (
-    <hr className="my-6 border-zinc-200" />
-  ),
+  hr: () => <hr className="my-6" style={{ borderColor: "var(--border-sub)" }} />,
   code: ({ children, className }) => {
     const isInline = !className;
     return isInline ? (
-      <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-sm font-mono text-zinc-800">
+      <code
+        className="rounded px-1.5 py-0.5 text-sm font-mono"
+        style={{ background: "var(--surface-sub)", color: "var(--text-sec)" }}
+      >
         {children}
       </code>
     ) : (
-      <code className="block overflow-x-auto rounded-lg bg-zinc-900 p-3 text-sm font-mono text-zinc-100">
+      <code
+        className="block overflow-x-auto p-3 text-sm font-mono"
+        style={{
+          background: "var(--bg-alt)",
+          color: "var(--text-sec)",
+          borderRadius: "var(--radius-sm)",
+        }}
+      >
         {children}
       </code>
     );
   },
   pre: ({ children }) => (
-    <pre className="mb-4 overflow-x-auto rounded-lg bg-zinc-900 p-0">
+    <pre
+      className="mb-4 overflow-x-auto p-0"
+      style={{ borderRadius: "var(--radius-sm)", background: "var(--bg-alt)" }}
+    >
       {children}
     </pre>
   ),
@@ -86,44 +97,43 @@ const components: Components = {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-blue-600 underline underline-offset-2 hover:text-blue-800"
+      className="underline underline-offset-2 transition-colors"
+      style={{ color: "var(--primary)" }}
     >
       {children}
     </a>
   ),
   table: ({ children }) => (
     <div className="mb-4 overflow-x-auto">
-      <table className="min-w-full border-collapse text-sm">
-        {children}
-      </table>
+      <table className="min-w-full border-collapse text-sm">{children}</table>
     </div>
   ),
   thead: ({ children }) => (
-    <thead className="bg-zinc-100">
-      {children}
-    </thead>
+    <thead style={{ background: "var(--surface-sub)" }}>{children}</thead>
   ),
   th: ({ children }) => (
-    <th className="border border-zinc-200 px-3 py-2 text-left font-medium text-zinc-700">
+    <th
+      className="px-3 py-2 text-left font-medium"
+      style={{ border: "1px solid var(--border-sub)", color: "var(--text-sec)" }}
+    >
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="border border-zinc-200 px-3 py-2 text-zinc-700">
+    <td
+      className="px-3 py-2"
+      style={{ border: "1px solid var(--border-sub)", color: "var(--text-sec)" }}
+    >
       {children}
     </td>
   ),
-  tbody: ({ children }) => (
-    <tbody>
-      {children}
-    </tbody>
-  ),
+  tbody: ({ children }) => <tbody>{children}</tbody>,
 };
 
 export function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
   if (!content || content.trim().length === 0) {
     return (
-      <div className={`text-sm text-zinc-400 ${className}`}>
+      <div className={`text-sm ${className}`} style={{ color: "var(--text-subtle)" }}>
         暂无总结内容
       </div>
     );
@@ -131,10 +141,7 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
 
   return (
     <div className={`markdown-content ${className}`}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={components}
-      >
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>
     </div>

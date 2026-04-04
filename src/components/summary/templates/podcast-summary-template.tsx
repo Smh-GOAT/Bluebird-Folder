@@ -44,8 +44,8 @@ export function PodcastSummaryTemplate({
 
       {/* Theme */}
       {podcastData?.theme && (
-        <div className="rounded-xl border border-purple-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-purple-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>🎯</span>
             本期主题
           </h2>
@@ -57,8 +57,8 @@ export function PodcastSummaryTemplate({
 
       {/* Main Opinions */}
       {podcastData?.mainOpinions && podcastData.mainOpinions.length > 0 && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>💭</span>
             主要观点
           </h2>
@@ -68,7 +68,7 @@ export function PodcastSummaryTemplate({
                 key={index}
                 className="rounded-lg border-l-4 border-purple-400 bg-purple-50/50 p-3"
               >
-                <p className="text-sm text-zinc-700">{opinion}</p>
+                <p className="text-sm text-bb-text-sec">{opinion}</p>
               </div>
             ))}
           </div>
@@ -77,13 +77,13 @@ export function PodcastSummaryTemplate({
 
       {/* Dialogue Thread */}
       {podcastData?.dialogueThread && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>🔄</span>
             对话主线
           </h2>
-          <div className="rounded-lg bg-zinc-50 p-3">
-            <p className="text-sm text-zinc-700">{podcastData.dialogueThread}</p>
+          <div className="rounded-lg bg-bb-surface-sub p-3">
+            <p className="text-sm text-bb-text-sec">{podcastData.dialogueThread}</p>
           </div>
         </div>
       )}
@@ -99,7 +99,7 @@ export function PodcastSummaryTemplate({
             {podcastData.highlights.map((highlight, index) => (
               <blockquote
                 key={index}
-                className="border-l-4 border-purple-400 bg-white/70 p-3 text-sm italic text-zinc-700"
+                className="border-l-4 border-purple-400 bg-bb-surface p-3 text-sm italic text-bb-text-sec"
               >
                 &ldquo;{highlight}&rdquo;
               </blockquote>
@@ -110,13 +110,13 @@ export function PodcastSummaryTemplate({
 
       {/* Inspiration */}
       {podcastData?.inspiration && (
-        <div className="rounded-xl border border-purple-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-purple-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>💡</span>
             听后启发
           </h2>
           <div className="rounded-lg bg-purple-50 p-3">
-            <p className="text-sm text-zinc-700">{podcastData.inspiration}</p>
+            <p className="text-sm text-bb-text-sec">{podcastData.inspiration}</p>
           </div>
         </div>
       )}
@@ -137,18 +137,18 @@ export function PodcastSummaryTemplate({
 
       {/* Markdown Content */}
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {/* Timestamp */}
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}

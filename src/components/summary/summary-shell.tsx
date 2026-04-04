@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { authFetch } from "@/lib/forsion/fetch";
 import { useSearchParams } from "next/navigation";
 import { HomeSidebar } from "@/components/home/home-sidebar";
 import { ExportActions } from "@/components/summary/export-actions";
@@ -11,6 +12,7 @@ import { QAChatPanel } from "@/components/summary/qa-chat-panel";
 import { VideoPlayer } from "@/components/video/video-player";
 import { PlayerPlaceholder } from "@/components/video/player-placeholder";
 import { VideoTimeProvider } from "@/components/summary/video-time-context";
+import { ModeToggle } from "@/components/layout/theme-selector";
 import type { VideoHistoryItem, SubtitleReference } from "@/types";
 import type { SummaryDetailLevel, SummaryStructured } from "@/types/summary";
 
@@ -34,10 +36,11 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
   const showEmoji = searchParams.get("showEmoji") !== "false";
   const shouldTranslate = searchParams.get("translateSubtitles") === "true";
   const subtitleTargetLanguage = searchParams.get("subtitleTargetLanguage") ?? "zh";
+  const modelId = searchParams.get("modelId") ?? undefined;
 
   const loadHistory = useCallback(async () => {
     try {
-      const response = await fetch(`/api/history/${summaryId}`, { cache: "no-store" });
+      const response = await authFetch(`/api/history/${summaryId}`, { cache: "no-store" });
       if (!response.ok) {
         return;
       }
@@ -62,7 +65,7 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
     setTranslateError(null);
     
     try {
-      const response = await fetch("/api/subtitles/translate", {
+      const response = await authFetch("/api/subtitles/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -100,7 +103,7 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
     setGenerateError(null);
 
     try {
-      const response = await fetch("/api/summary/generate", {
+      const response = await authFetch("/api/summary/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -109,7 +112,8 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
           language,
           detail,
           showTimestamp,
-          showEmoji
+          showEmoji,
+          modelId,
         })
       });
 
@@ -183,14 +187,14 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
   const currentError = generateError || translateError;
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen" style={{ background: "var(--bg)" }}>
       <div className="mx-auto w-[96vw] max-w-[1760px] space-y-3 px-4 py-3 sm:px-5 lg:px-6 lg:py-4">
         <header className="ui-panel px-4 py-2.5 lg:px-5 lg:py-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2.5">
               <Link
                 href="/"
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-[13px] font-medium text-zinc-700 transition hover:bg-zinc-50"
+                className="ui-btn-secondary inline-flex h-8 items-center gap-1.5 px-3 text-[13px] font-medium"
               >
                 <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path
@@ -202,13 +206,21 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
                 新总结
               </Link>
               <div className="min-w-0">
-                <h1 className="truncate text-lg font-semibold text-zinc-900 lg:text-xl">
+                <h1
+                  className="truncate text-lg font-semibold lg:text-xl"
+                  style={{ color: "var(--text)" }}
+                >
                   {history?.title ?? "视频总结"}
                 </h1>
-                <p className="text-xs text-zinc-500 lg:text-sm">ID: {summaryId}</p>
+                <p className="text-xs lg:text-sm" style={{ color: "var(--text-muted)" }}>
+                  ID: {summaryId}
+                </p>
               </div>
             </div>
-            <ExportActions history={history} />
+            <div className="flex items-center gap-2">
+              <ExportActions history={history} />
+              <ModeToggle />
+            </div>
           </div>
         </header>
 
@@ -218,7 +230,7 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
 
             <section className="ui-panel space-y-3 p-3.5 lg:p-4">
               <div className="ui-block p-3">
-                <h2 className="text-sm font-semibold">视频播放器</h2>
+                <h2 className="text-sm font-semibold" style={{ color: "var(--text)" }}>视频播放器</h2>
                 <div className="mt-2.5">
                   {history?.videoUrl ? (
                     <VideoPlayer
@@ -234,7 +246,7 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
                 </div>
               </div>
               <div className="ui-block flex flex-col p-3" style={{ height: "400px" }}>
-                <h2 className="mb-2 text-sm font-semibold">AI 问答</h2>
+                <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--text)" }}>AI 问答</h2>
                 <div className="flex-1 overflow-hidden">
                   <QAChatPanel
                     historyId={summaryId}

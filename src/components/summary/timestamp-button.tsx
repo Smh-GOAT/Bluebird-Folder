@@ -10,27 +10,24 @@ interface TimestampButtonProps {
   className?: string;
 }
 
-export function TimestampButton({ 
-  time, 
-  format = "short",
-  onClick,
-  className 
-}: TimestampButtonProps) {
+export function TimestampButton({ time, format = "short", onClick, className }: TimestampButtonProps) {
   const { seekTo } = useVideoTime();
-  
-  const formattedTime = format === "short" 
-    ? formatTimeShort(time)
-    : formatTimeLong(time);
-  
+  const formattedTime = format === "short" ? formatTimeShort(time) : formatTimeLong(time);
+
   const handleClick = () => {
     seekTo(time);
     onClick?.();
   };
-  
+
   return (
     <button
       onClick={handleClick}
-      className={`inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-600 hover:bg-blue-100 transition-colors ${className}`}
+      className={`inline-flex items-center px-1.5 py-0.5 text-xs font-medium transition-colors ${className}`}
+      style={{
+        borderRadius: "var(--radius-xs)",
+        background: "var(--primary-tint)",
+        color: "var(--primary)",
+      }}
       title={`跳转到 ${formattedTime}`}
       type="button"
     >

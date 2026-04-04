@@ -44,8 +44,8 @@ export function ReviewSummaryTemplate({
 
       {/* Subject Overview */}
       {reviewData?.subject && (
-        <div className="rounded-xl border border-rose-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-rose-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>📦</span>
             评测对象
           </h2>
@@ -101,7 +101,7 @@ export function ReviewSummaryTemplate({
             <span>✅</span>
             适合谁
           </h2>
-          <div className="rounded-lg bg-white p-3">
+          <div className="rounded-lg bg-bb-surface p-3">
             <p className="text-sm text-blue-800">{reviewData.suitableFor}</p>
           </div>
         </div>
@@ -114,7 +114,7 @@ export function ReviewSummaryTemplate({
             <span>❌</span>
             不适合谁
           </h2>
-          <div className="rounded-lg bg-white p-3">
+          <div className="rounded-lg bg-bb-surface p-3">
             <p className="text-sm text-orange-800">{reviewData.notSuitableFor}</p>
           </div>
         </div>
@@ -127,8 +127,8 @@ export function ReviewSummaryTemplate({
             <span className="text-xl">🎯</span>
             最终结论
           </h2>
-          <div className="rounded-lg bg-white p-3 shadow-sm">
-            <p className="text-sm font-medium text-zinc-800">{reviewData.conclusion}</p>
+          <div className="rounded-lg bg-bb-surface p-3 shadow-sm">
+            <p className="text-sm font-medium text-bb-text">{reviewData.conclusion}</p>
           </div>
         </div>
       )}
@@ -149,18 +149,18 @@ export function ReviewSummaryTemplate({
 
       {/* Markdown Content */}
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {/* Timestamp */}
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}

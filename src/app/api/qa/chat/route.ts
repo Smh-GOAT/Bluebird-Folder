@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { QAChatRequest, QAChatResponse, QAMessage, SubtitleReference } from "@/types";
-import { getHistoryById } from "@/lib/server/sidebar-store";
-import { createSession, getSession, addMessage } from "@/lib/server/qa-store";
+import { forsionFromRequest } from "@/lib/forsion/proxy";
+import { extractToken } from "@/lib/forsion/client";
 import { createSubtitleChunker } from "@/lib/services/rag";
-import { createLLMProvider } from "@/lib/services/llm";
-import { getRuntimeConfig } from "@/lib/server/runtime-config-store";
+import { createForsionLLMProvider } from "@/lib/forsion/llm-client";
+
+const DEFAULT_MODEL_ID = process.env.FORSION_MODEL_ID || "qwen3.5-plus";
+
+interface HistoryData {
+  id: string;
+  title: string;
+  subtitlesArray?: Array<{ start: number; end: number; text: string }>;
+  [key: string]: unknown;
+}
+
+interface QASessionData {
+  id: string;
+  historyId: string;
+  messages: QAMessage[];
+  [key: string]: unknown;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,17 +33,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const history = getHistoryById(historyId);
-    if (!history) {
+    const client = forsionFromRequest(request);
+
+    // Fetch history from Forsion Backend
+    let history: HistoryData;
+    try {
+      const result = await client.fetch<{ data: HistoryData }>(`/api/bluebird/histories/${historyId}`);
+      history = result.data;
+    } catch {
       return NextResponse.json(
         { code: 404, message: "History not found" },
         { status: 404 }
       );
     }
 
-    let session = sessionId ? getSession(sessionId) : null;
-    if (!session) {
-      session = createSession(historyId);
+    // Get or create QA session
+    let session: QASessionData;
+    if (sessionId) {
+      try {
+        const result = await client.fetch<{ data: QASessionData }>(`/api/bluebird/qa/sessions/${sessionId}`);
+        session = result.data;
+      } catch {
+        const result = await client.fetch<{ data: QASessionData }>("/api/bluebird/qa/sessions", {
+          method: "POST",
+          body: JSON.stringify({ historyId }),
+        });
+        session = result.data;
+      }
+    } else {
+      const result = await client.fetch<{ data: QASessionData }>("/api/bluebird/qa/sessions", {
+        method: "POST",
+        body: JSON.stringify({ historyId }),
+      });
+      session = result.data;
     }
 
     const userMessage: QAMessage = {
@@ -37,7 +74,6 @@ export async function POST(request: NextRequest) {
       content: message,
       timestamp: new Date().toISOString()
     };
-    addMessage(session.id, userMessage);
 
     const chunker = createSubtitleChunker(options?.chunking);
     const chunks = history.subtitlesArray
@@ -56,16 +92,15 @@ export async function POST(request: NextRequest) {
       score: 1.0
     }));
 
-    const config = getRuntimeConfig();
-    const llmProvider = createLLMProvider({
-      provider: config.llmProvider ?? "kimi",
-      model: config.llmModel ?? "kimi-latest",
-      apiKey: config.llmApiKey ?? "",
-      baseUrl: config.llmBaseUrl,
-      temperature: options?.temperature ?? 0.7
+    // Use Forsion LLM via chat/completions
+    const token = extractToken(request);
+    const llmProvider = createForsionLLMProvider({
+      modelId: DEFAULT_MODEL_ID,
+      token,
+      temperature: options?.temperature ?? 0.7,
     });
 
-    const previousMessages = session.messages.slice(0, -1);
+    const previousMessages = session.messages ?? [];
     const qaResult = await llmProvider.generateQA({
       question: message,
       references,
@@ -86,9 +121,15 @@ export async function POST(request: NextRequest) {
       content: qaResult.answer,
       timestamp: new Date().toISOString(),
       references: qaResult.references,
-      model: config.llmModel
+      model: DEFAULT_MODEL_ID,
     };
-    addMessage(session.id, assistantMessage);
+
+    // Update session messages in Forsion Backend
+    const updatedMessages = [...previousMessages, userMessage, assistantMessage];
+    await client.fetch(`/api/bluebird/qa/sessions/${session.id}`, {
+      method: "PUT",
+      body: JSON.stringify({ messages: updatedMessages }),
+    });
 
     const response: QAChatResponse = {
       sessionId: session.id,

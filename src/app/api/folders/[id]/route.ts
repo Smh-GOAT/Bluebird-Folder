@@ -1,49 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { deleteFolder, renameFolder } from "@/lib/server/sidebar-store";
+import { NextRequest } from "next/server";
+import { proxyPatch, proxyDelete } from "@/lib/forsion/proxy";
 
 interface Params {
   params: Promise<{ id: string }>;
 }
 
 export async function PATCH(request: NextRequest, { params }: Params) {
-  try {
-    const { id } = await params;
-    const body = (await request.json()) as { name?: string };
-    const folder = renameFolder(id, body.name ?? "");
-    return NextResponse.json({
-      code: 0,
-      data: folder,
-      message: "success"
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        code: 40001,
-        data: null,
-        message: error instanceof Error ? error.message : "更新失败"
-      },
-      { status: 400 }
-    );
-  }
+  const { id } = await params;
+  return proxyPatch(request, `/api/bluebird/folders/${id}`);
 }
 
-export async function DELETE(_request: NextRequest, { params }: Params) {
-  try {
-    const { id } = await params;
-    deleteFolder(id);
-    return NextResponse.json({
-      code: 0,
-      data: null,
-      message: "success"
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        code: 40001,
-        data: null,
-        message: error instanceof Error ? error.message : "删除失败"
-      },
-      { status: 400 }
-    );
-  }
+export async function DELETE(request: NextRequest, { params }: Params) {
+  const { id } = await params;
+  return proxyDelete(request, `/api/bluebird/folders/${id}`);
 }

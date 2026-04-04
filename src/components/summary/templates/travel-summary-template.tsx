@@ -70,17 +70,17 @@ export function TravelSummaryTemplate({
       </div>
 
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}

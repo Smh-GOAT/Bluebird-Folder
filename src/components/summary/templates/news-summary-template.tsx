@@ -49,8 +49,8 @@ export function NewsSummaryTemplate({
         newsData?.where ||
         newsData?.why ||
         newsData?.how) && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-slate-200 bg-bb-surface p-4">
+          <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>📋</span>
             5W1H 要点
           </h2>
@@ -60,7 +60,7 @@ export function NewsSummaryTemplate({
                 <div className="mb-1 text-xs font-medium text-blue-700">
                   What · 事件
                 </div>
-                <p className="text-sm text-zinc-700">{newsData.what}</p>
+                <p className="text-sm text-bb-text-sec">{newsData.what}</p>
               </div>
             )}
             {newsData?.who && (
@@ -68,7 +68,7 @@ export function NewsSummaryTemplate({
                 <div className="mb-1 text-xs font-medium text-green-700">
                   Who · 相关方
                 </div>
-                <p className="text-sm text-zinc-700">{newsData.who}</p>
+                <p className="text-sm text-bb-text-sec">{newsData.who}</p>
               </div>
             )}
             {newsData?.when && (
@@ -76,7 +76,7 @@ export function NewsSummaryTemplate({
                 <div className="mb-1 text-xs font-medium text-purple-700">
                   When · 时间
                 </div>
-                <p className="text-sm text-zinc-700">{newsData.when}</p>
+                <p className="text-sm text-bb-text-sec">{newsData.when}</p>
               </div>
             )}
             {newsData?.where && (
@@ -84,7 +84,7 @@ export function NewsSummaryTemplate({
                 <div className="mb-1 text-xs font-medium text-orange-700">
                   Where · 地点
                 </div>
-                <p className="text-sm text-zinc-700">{newsData.where}</p>
+                <p className="text-sm text-bb-text-sec">{newsData.where}</p>
               </div>
             )}
             {newsData?.why && (
@@ -92,7 +92,7 @@ export function NewsSummaryTemplate({
                 <div className="mb-1 text-xs font-medium text-red-700">
                   Why · 原因
                 </div>
-                <p className="text-sm text-zinc-700">{newsData.why}</p>
+                <p className="text-sm text-bb-text-sec">{newsData.why}</p>
               </div>
             )}
             {newsData?.how && (
@@ -100,7 +100,7 @@ export function NewsSummaryTemplate({
                 <div className="mb-1 text-xs font-medium text-teal-700">
                   How · 方式
                 </div>
-                <p className="text-sm text-zinc-700">{newsData.how}</p>
+                <p className="text-sm text-bb-text-sec">{newsData.how}</p>
               </div>
             )}
           </div>
@@ -109,39 +109,39 @@ export function NewsSummaryTemplate({
 
       {/* Background */}
       {newsData?.background && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-slate-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>📖</span>
             事件背景
           </h2>
           <div className="rounded-lg bg-slate-50 p-3">
-            <p className="text-sm text-zinc-700">{newsData.background}</p>
+            <p className="text-sm text-bb-text-sec">{newsData.background}</p>
           </div>
         </div>
       )}
 
       {/* Progress */}
       {newsData?.progress && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-slate-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>📈</span>
             关键进展
           </h2>
           <div className="rounded-lg bg-slate-50 p-3">
-            <p className="text-sm text-zinc-700">{newsData.progress}</p>
+            <p className="text-sm text-bb-text-sec">{newsData.progress}</p>
           </div>
         </div>
       )}
 
       {/* Impact */}
       {newsData?.impact && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-slate-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>🌊</span>
             影响分析
           </h2>
           <div className="rounded-lg bg-slate-50 p-3">
-            <p className="text-sm text-zinc-700">{newsData.impact}</p>
+            <p className="text-sm text-bb-text-sec">{newsData.impact}</p>
           </div>
         </div>
       )}
@@ -180,18 +180,18 @@ export function NewsSummaryTemplate({
 
       {/* Markdown Content */}
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {/* Timestamp */}
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}

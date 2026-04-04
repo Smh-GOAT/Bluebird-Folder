@@ -16,9 +16,7 @@ export function SubtitleTranslationToggle({
 }: SubtitleTranslationToggleProps) {
   const [showTranslated, setShowTranslated] = useState(!!translatedSubtitles);
 
-  if (!translatedSubtitles || translatedSubtitles.length === 0) {
-    return null;
-  }
+  if (!translatedSubtitles || translatedSubtitles.length === 0) return null;
 
   const handleToggle = () => {
     const newValue = !showTranslated;
@@ -27,13 +25,26 @@ export function SubtitleTranslationToggle({
   };
 
   return (
-    <div className="mb-3 flex items-center justify-between rounded-lg border bg-zinc-50 p-2">
-      <span className="text-sm text-zinc-600">
+    <div
+      className="mb-3 flex items-center justify-between p-2"
+      style={{
+        borderRadius: "var(--radius-sm)",
+        border: "1px solid var(--border-sub)",
+        background: "var(--surface-sub)",
+      }}
+    >
+      <span className="text-sm" style={{ color: "var(--text-sec)" }}>
         {showTranslated ? "显示翻译字幕" : "显示原文字幕"}
       </span>
       <button
         onClick={handleToggle}
-        className="rounded bg-zinc-200 px-3 py-1 text-sm hover:bg-zinc-300"
+        className="px-3 py-1 text-sm transition-colors"
+        style={{
+          borderRadius: "var(--radius-xs)",
+          background: "var(--surface-hover)",
+          color: "var(--text-sec)",
+          border: "1px solid var(--border-sub)",
+        }}
       >
         {showTranslated ? "切换回原文字幕" : "切换到翻译字幕"}
       </button>

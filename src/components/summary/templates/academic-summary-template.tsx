@@ -58,59 +58,59 @@ export function AcademicSummaryTemplate({
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-zinc-200 bg-white p-4">
+        <div className="rounded-lg border border-bb-border bg-bb-surface p-4">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-lg">❓</span>
-            <span className="font-medium text-zinc-900">核心问题</span>
+            <span className="font-medium text-bb-text">核心问题</span>
           </div>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-bb-text-muted">
             详见下方正文分析
           </p>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-4">
+        <div className="rounded-lg border border-bb-border bg-bb-surface p-4">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-lg">💡</span>
-            <span className="font-medium text-zinc-900">关键观点</span>
+            <span className="font-medium text-bb-text">关键观点</span>
           </div>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-bb-text-muted">
             详见下方正文分析
           </p>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-4">
+        <div className="rounded-lg border border-bb-border bg-bb-surface p-4">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-lg">📐</span>
-            <span className="font-medium text-zinc-900">方法 / 论证</span>
+            <span className="font-medium text-bb-text">方法 / 论证</span>
           </div>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-bb-text-muted">
             详见下方正文分析
           </p>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-4">
+        <div className="rounded-lg border border-bb-border bg-bb-surface p-4">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-lg">🔍</span>
-            <span className="font-medium text-zinc-900">局限 / 启发</span>
+            <span className="font-medium text-bb-text">局限 / 启发</span>
           </div>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-bb-text-muted">
             详见下方正文分析
           </p>
         </div>
       </div>
 
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}

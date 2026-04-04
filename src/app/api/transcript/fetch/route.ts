@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ErrorCodes } from "@/lib/services/common/error-codes";
 import { errorResponse, successResponse } from "@/lib/services/common/api-response";
 import { detectPlatform, getPlatformParser } from "@/lib/services/video/platform-parser";
-import { saveHistory } from "@/lib/server/sidebar-store";
+import { forsionFromRequest } from "@/lib/forsion/proxy";
 
 const schema = z.object({
   url: z.string().url()
@@ -23,23 +23,29 @@ export async function POST(request: Request) {
     const transcript = await parser.fetchTranscript(body.url);
     const historyId = createHistoryId(transcript.meta.platform, transcript.meta.videoId);
 
-    saveHistory({
-      id: historyId,
-      title: transcript.meta.title,
-      platform: transcript.meta.platform,
-      createdAt: new Date().toISOString(),
-      videoId: transcript.meta.videoId,
-      videoUrl: body.url,
-      author: transcript.meta.author,
-      duration: transcript.meta.duration,
-      publishAt: transcript.meta.publishAt,
-      subtitleSource: transcript.subtitleSource,
-      subtitlesArray: transcript.segments,
-      fullText: transcript.fullText,
-      summaryJson: null,
-      summaryMarkdown: null,
-      folderId: null
+    // Save history via Forsion Backend
+    const client = forsionFromRequest(request);
+    await client.fetch("/api/bluebird/histories", {
+      method: "POST",
+      body: JSON.stringify({
+        id: historyId,
+        title: transcript.meta.title,
+        platform: transcript.meta.platform,
+        createdAt: new Date().toISOString(),
+        videoId: transcript.meta.videoId,
+        videoUrl: body.url,
+        author: transcript.meta.author,
+        duration: transcript.meta.duration,
+        publishAt: transcript.meta.publishAt,
+        subtitleSource: transcript.subtitleSource,
+        subtitlesArray: transcript.segments,
+        fullText: transcript.fullText,
+        summaryJson: null,
+        summaryMarkdown: null,
+        folderId: null,
+      }),
     });
+
     return successResponse({
       meta: transcript.meta,
       subtitleSource: transcript.subtitleSource,

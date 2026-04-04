@@ -69,7 +69,7 @@ export function VideoPlayer({ videoUrl, platform, currentTime, onTimeUpdate }: V
   }, [baseEmbedUrl, platform, registerSeekHandler, unregisterSeekHandler]);
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+    <div className="relative aspect-video w-full overflow-hidden" style={{ borderRadius: "var(--radius-sm)", background: "#000" }}>
       {embedUrlWithTime && (
         <iframe
           key={embedUrlWithTime}

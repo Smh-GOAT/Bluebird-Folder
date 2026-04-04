@@ -1,20 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getHistoryById, saveHistory } from "@/lib/server/sidebar-store";
-import { createLLMProvider } from "@/lib/services/llm";
+import { forsionFromRequest } from "@/lib/forsion/proxy";
+import { extractToken } from "@/lib/forsion/client";
+import { createForsionLLMProvider } from "@/lib/forsion/llm-client";
 import type {
-  LLMProviderType,
   SummaryDetailLevel,
   SummaryTemplate,
   SummaryStructured
 } from "@/types/summary";
 
-const DEFAULT_PROVIDER: LLMProviderType = "qwen";
-const DEFAULT_MODELS: Record<LLMProviderType, string> = {
-  kimi: "moonshot-v1-8k",
-  openai: "gpt-4o-mini",
-  anthropic: "claude-3-haiku-20240307",
-  qwen: "qwen3.5-plus"
-};
+const DEFAULT_MODEL_ID = process.env.FORSION_MODEL_ID || "qwen3.5-plus";
+
+interface HistoryResponse {
+  code: number;
+  data: {
+    id: string;
+    title: string;
+    author?: string;
+    duration?: number;
+    platform: string;
+    subtitlesArray?: Array<{ start: number; end: number; text: string }>;
+    summaryJson?: SummaryStructured | null;
+    summaryMarkdown?: string | null;
+    [key: string]: unknown;
+  };
+  message: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +35,7 @@ export async function POST(request: NextRequest) {
       detail?: SummaryDetailLevel;
       showTimestamp?: boolean;
       showEmoji?: boolean;
+      modelId?: string;
     };
 
     const { historyId } = body;
@@ -36,8 +47,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const history = getHistoryById(historyId);
-    if (!history) {
+    // Fetch history from Forsion Backend
+    const client = forsionFromRequest(request);
+    let history: HistoryResponse["data"];
+    try {
+      const result = await client.fetch<HistoryResponse>(`/api/bluebird/histories/${historyId}`);
+      history = result.data;
+    } catch {
       return NextResponse.json(
         { code: 40401, data: null, message: "历史记录不存在" },
         { status: 404 }
@@ -64,27 +80,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const provider = (process.env.LLM_PROVIDER as LLMProviderType) ?? DEFAULT_PROVIDER;
-    const apiKey = process.env[`${provider.toUpperCase()}_API_KEY`];
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { code: 50002, data: null, message: `未配置 ${provider.toUpperCase()}_API_KEY 环境变量` },
-        { status: 500 }
-      );
-    }
-
-    const model = process.env[`${provider.toUpperCase()}_MODEL`] ?? DEFAULT_MODELS[provider];
-    const baseUrl = process.env[`${provider.toUpperCase()}_BASE_URL`];
-
-    const llmProvider = createLLMProvider({
-      provider,
-      apiKey,
-      model,
-      baseUrl,
+    // Use Forsion LLM via chat/completions
+    const token = extractToken(request);
+    const llmProvider = createForsionLLMProvider({
+      modelId: body.modelId ?? DEFAULT_MODEL_ID,
+      token,
       temperature: 0.7,
       maxTokens: 4000,
-      timeout: 120000
+      timeout: 120000,
     });
 
     const result = await llmProvider.generateSummary({
@@ -109,18 +112,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const updatedHistory = saveHistory({
-      ...history,
-      summaryJson: result.structured as SummaryStructured,
-      summaryMarkdown: result.markdown ?? ""
+    // Update history via Forsion Backend
+    await client.fetch(`/api/bluebird/histories/${historyId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        summaryJson: result.structured,
+        summaryMarkdown: result.markdown ?? "",
+      }),
     });
 
     return NextResponse.json({
       code: 0,
       data: {
         historyId,
-        summaryJson: updatedHistory.summaryJson,
-        summaryMarkdown: updatedHistory.summaryMarkdown,
+        summaryJson: result.structured,
+        summaryMarkdown: result.markdown ?? "",
         cached: false,
         usage: result.usage
       },

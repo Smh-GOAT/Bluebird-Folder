@@ -4,22 +4,19 @@
   "description": "BibiGPT rebuild MVP",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": ". ./.env 2>/dev/null; next dev --port ${PORT:-3000}",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
   },
   "keywords": [
     "nextjs",
-    "supabase",
-    "bibigpt"
+    "forsion",
+    "bluebird"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^7.4.2",
-    "@supabase/ssr": "^0.9.0",
-    "@supabase/supabase-js": "^2.98.0",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -35,7 +32,6 @@
     "eslint": "^9.39.3",
     "eslint-config-next": "^16.1.6",
     "postcss": "^8.5.8",
-    "prisma": "^7.4.2",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.3"
   }

@@ -43,21 +43,21 @@ export function MeetingSummaryTemplate({
       />
 
       {/* Meeting Overview */}
-      <div className="rounded-xl border border-blue-200 bg-white p-4">
-        <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+      <div className="rounded-xl border border-blue-200 bg-bb-surface p-4">
+        <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
           <span>📋</span>
           会议概览
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-lg bg-blue-50 p-3">
             <div className="mb-1 text-xs text-blue-700">会议主题</div>
-            <p className="text-sm font-medium text-zinc-800">
+            <p className="text-sm font-medium text-bb-text">
               {overview?.topic ?? "未标注"}
             </p>
           </div>
           <div className="rounded-lg bg-blue-50 p-3">
             <div className="mb-1 text-xs text-blue-700">时长</div>
-            <p className="text-sm font-medium text-zinc-800">
+            <p className="text-sm font-medium text-bb-text">
               {overview?.duration ? `${Math.round(overview.duration / 60)} 分钟` : "未标注"}
             </p>
           </div>
@@ -66,8 +66,8 @@ export function MeetingSummaryTemplate({
 
       {/* Topics */}
       {meetingData?.topics && meetingData.topics.length > 0 && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>📌</span>
             讨论议题
           </h2>
@@ -75,10 +75,10 @@ export function MeetingSummaryTemplate({
             {meetingData.topics.map((topic, index) => (
               <li
                 key={index}
-                className="flex items-start gap-2 rounded-lg bg-zinc-50 p-3"
+                className="flex items-start gap-2 rounded-lg bg-bb-surface-sub p-3"
               >
                 <span className="mt-0.5 text-blue-500">{index + 1}.</span>
-                <span className="text-sm text-zinc-700">{topic}</span>
+                <span className="text-sm text-bb-text-sec">{topic}</span>
               </li>
             ))}
           </ul>
@@ -96,10 +96,10 @@ export function MeetingSummaryTemplate({
             {meetingData.decisions.map((decision, index) => (
               <li
                 key={index}
-                className="flex items-start gap-2 rounded-lg bg-white p-3 shadow-sm"
+                className="flex items-start gap-2 rounded-lg bg-bb-surface p-3 shadow-sm"
               >
                 <span className="mt-0.5 text-green-600">✓</span>
-                <span className="text-sm font-medium text-zinc-800">{decision}</span>
+                <span className="text-sm font-medium text-bb-text">{decision}</span>
               </li>
             ))}
           </ul>
@@ -117,9 +117,9 @@ export function MeetingSummaryTemplate({
             {meetingData.actionItems.map((item, index) => (
               <div
                 key={index}
-                className="rounded-lg border border-amber-200 bg-white p-3"
+                className="rounded-lg border border-amber-200 bg-bb-surface p-3"
               >
-                <div className="mb-2 text-sm font-medium text-zinc-800">
+                <div className="mb-2 text-sm font-medium text-bb-text">
                   {item.task}
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
@@ -174,18 +174,18 @@ export function MeetingSummaryTemplate({
 
       {/* Markdown Content */}
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {/* Timestamp */}
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}

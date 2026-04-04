@@ -7,56 +7,67 @@ interface MessageBubbleProps {
   onReferenceClick?: (ref: SubtitleReference) => void;
 }
 
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
+
 export function MessageBubble({ message, onReferenceClick }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+        className="max-w-[85%] px-4 py-3"
+        style={
           isUser
-            ? "bg-zinc-900 text-white"
-            : "bg-zinc-100 text-zinc-900"
-        }`}
+            ? {
+                background: "var(--chat-user-bg)",
+                color: "white",
+                borderRadius: "var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg)",
+              }
+            : {
+                background: "var(--chat-ai-bg)",
+                border: "1px solid var(--chat-ai-border)",
+                color: "var(--text-sec)",
+                borderRadius: "var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs)",
+              }
+        }
       >
         <div className="text-sm leading-relaxed">{message.content}</div>
 
         {!isUser && message.references && message.references.length > 0 && (
-          <div className="mt-3 border-t border-zinc-200 pt-2">
-            <p className="mb-1.5 text-xs text-zinc-500">参考片段：</p>
+          <div className="mt-3 pt-2" style={{ borderTop: "1px solid var(--border-sub)" }}>
+            <p className="mb-1.5 text-xs" style={{ color: "var(--text-muted)" }}>参考片段：</p>
             <div className="space-y-1.5">
               {message.references.map((ref, idx) => (
                 <button
                   key={idx}
                   onClick={() => onReferenceClick?.(ref)}
-                  className="block w-full rounded bg-white/70 px-2.5 py-1.5 text-left text-xs hover:bg-white"
+                  className="block w-full px-2.5 py-1.5 text-left text-xs transition-colors"
+                  style={{
+                    borderRadius: "var(--radius-xs)",
+                    background: "var(--surface-sub)",
+                    border: "1px solid var(--border-sub)",
+                    color: "var(--text-sec)",
+                  }}
                 >
-                  <span className="text-zinc-500">
+                  <span style={{ color: "var(--text-muted)" }}>
                     [{formatTime(ref.start)}-{formatTime(ref.end)}]
                   </span>{" "}
-                  <span className="text-zinc-700">{ref.text.slice(0, 60)}...</span>
+                  {ref.text.slice(0, 60)}...
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        <div className={`mt-1.5 text-right text-[10px] ${isUser ? "text-zinc-400" : "text-zinc-400"}`}>
-          {new Date(message.timestamp).toLocaleTimeString("zh-CN", {
-            hour: "2-digit",
-            minute: "2-digit"
-          })}
-          {message.model && (
-            <span className="ml-2">· {message.model}</span>
-          )}
+        <div className="mt-1.5 text-right text-[10px]" style={{ color: isUser ? "rgba(255,255,255,0.55)" : "var(--text-subtle)" }}>
+          {new Date(message.timestamp).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}
+          {message.model && <span className="ml-2">· {message.model}</span>}
         </div>
       </div>
     </div>
   );
-}
-
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }

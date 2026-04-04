@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { SubtitleTranslateRequest, SubtitleTranslation } from "@/types";
-import { getHistoryById, saveHistory } from "@/lib/server/sidebar-store";
-import { createLLMProvider } from "@/lib/services/llm";
-import { getRuntimeConfig } from "@/lib/server/runtime-config-store";
+import { forsionFromRequest } from "@/lib/forsion/proxy";
+import { extractToken } from "@/lib/forsion/client";
+import { createForsionLLMProvider, type ForsionLLMProvider } from "@/lib/forsion/llm-client";
 import { formatTime } from "@/lib/utils/time";
 
+const DEFAULT_MODEL_ID = process.env.FORSION_MODEL_ID || "qwen3.5-plus";
 const BATCH_SIZE = 50;
 
 function buildSubtitleTranslationPrompt(
@@ -22,9 +23,9 @@ function buildSubtitleTranslationPrompt(
 
 重要规则：
 
-1. 必须保持原有时间戳不变 [start-end]
+1. 必须保持原���时间戳不变 [start-end]
 2. 必须保持原有索引编号 [index]
-3. 只翻译文本内容，不要修改时间戳或索引
+3. 只翻译文本���容，不要修改时间戳或索引
 4. 确保翻译自然流畅，符合口语习惯
 5. 如果原文已经是${targetLangName}，则保持原文不变
 
@@ -75,7 +76,7 @@ function parseTranslationResult(
 }
 
 async function translateBatch(
-  llmProvider: ReturnType<typeof createLLMProvider>,
+  llmProvider: ForsionLLMProvider,
   subtitles: Array<{ start: number; end: number; text: string }>,
   targetLanguage: "zh" | "en",
   startIndex: number
@@ -107,6 +108,11 @@ async function translateBatch(
   return translations;
 }
 
+interface HistoryData {
+  id: string;
+  [key: string]: unknown;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: SubtitleTranslateRequest = await request.json();
@@ -119,36 +125,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const history = getHistoryById(historyId);
-    if (!history) {
+    const client = forsionFromRequest(request);
+
+    // Verify history exists
+    try {
+      await client.fetch<{ data: HistoryData }>(`/api/bluebird/histories/${historyId}`);
+    } catch {
       return NextResponse.json(
         { code: 404, message: "History not found" },
         { status: 404 }
       );
     }
 
-    const config = getRuntimeConfig();
-    const llmProvider = createLLMProvider({
-      provider: config.llmProvider ?? "kimi",
-      model: config.llmModel ?? "kimi-latest",
-      apiKey: config.llmApiKey ?? "",
-      baseUrl: config.llmBaseUrl,
+    // Use Forsion LLM via chat/completions
+    const token = extractToken(request);
+    const llmProvider = createForsionLLMProvider({
+      modelId: DEFAULT_MODEL_ID,
+      token,
       temperature: 0.3,
-      timeout: 120000
+      timeout: 120000,
     });
 
     const targetLang = options.targetLanguage as "zh" | "en";
     const allTranslations: SubtitleTranslation[] = [];
-    
+
     const totalBatches = Math.ceil(subtitles.length / BATCH_SIZE);
     console.log(`[subtitles-translate] Translating ${subtitles.length} subtitles in ${totalBatches} batches`);
 
     for (let i = 0; i < subtitles.length; i += BATCH_SIZE) {
       const batch = subtitles.slice(i, i + BATCH_SIZE);
       const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-      
+
       console.log(`[subtitles-translate] Processing batch ${batchNum}/${totalBatches} (${batch.length} subtitles)`);
-      
+
       try {
         const batchTranslations = await translateBatch(llmProvider, batch, targetLang, i);
         allTranslations.push(...batchTranslations);
@@ -160,16 +169,20 @@ export async function POST(request: NextRequest) {
 
     console.log(`[subtitles-translate] Completed: ${allTranslations.length} translations`);
 
-    const updatedHistory = {
-      ...history,
-      translatedSubtitles: allTranslations,
-      translationMeta: {
-        sourceLanguage: "auto",
-        targetLanguage: options.targetLanguage,
-        translatedAt: new Date().toISOString()
-      }
+    const translationMeta = {
+      sourceLanguage: "auto",
+      targetLanguage: options.targetLanguage,
+      translatedAt: new Date().toISOString()
     };
-    saveHistory(updatedHistory);
+
+    // Update history via Forsion Backend
+    await client.fetch(`/api/bluebird/histories/${historyId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        translatedSubtitles: allTranslations,
+        translationMeta,
+      }),
+    });
 
     return NextResponse.json({
       code: 0,
@@ -177,7 +190,7 @@ export async function POST(request: NextRequest) {
         historyId,
         translations: allTranslations,
         detectedSourceLanguage: "auto",
-        translatedAt: updatedHistory.translationMeta.translatedAt
+        translatedAt: translationMeta.translatedAt
       }
     });
   } catch (error) {

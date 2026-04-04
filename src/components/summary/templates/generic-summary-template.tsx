@@ -21,12 +21,12 @@ export function GenericSummaryTemplate({
   return (
     <div className="space-y-4">
       {hasStructuredData && overview && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h1 className="mb-3 text-lg font-semibold text-zinc-900">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
+          <h1 className="mb-3 text-lg font-semibold text-bb-text">
             {overview.title}
           </h1>
 
-          <div className="mb-3 flex flex-wrap gap-2 text-sm text-zinc-600">
+          <div className="mb-3 flex flex-wrap gap-2 text-sm text-bb-text-muted">
             {overview.author && (
               <span className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5">
                 👤 {overview.author}
@@ -58,23 +58,23 @@ export function GenericSummaryTemplate({
       )}
 
       {overview?.topic && (
-        <div className="rounded-lg border-l-4 border-zinc-800 bg-zinc-50 p-3">
-          <p className="text-sm font-medium text-zinc-700">{overview.topic}</p>
+        <div className="rounded-lg border-l-4 border-zinc-800 bg-bb-surface-sub p-3">
+          <p className="text-sm font-medium text-bb-text-sec">{overview.topic}</p>
         </div>
       )}
 
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}

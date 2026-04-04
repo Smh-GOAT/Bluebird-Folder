@@ -1,12 +1,40 @@
+# Next.js
 .next/
+out/
+
+# Dependencies
 node_modules/
+
+# Environment variables
 .env
 .env.local
 .env.*.local
+
+# Build output
 dist/
 coverage/
+tsconfig.tsbuildinfo
+
+# Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo

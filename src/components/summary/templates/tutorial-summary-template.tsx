@@ -44,8 +44,8 @@ export function TutorialSummaryTemplate({
 
       {/* Learning Goal */}
       {tutorialData?.learningGoal && (
-        <div className="rounded-xl border border-emerald-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-emerald-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>🎯</span>
             学习目标
           </h2>
@@ -59,8 +59,8 @@ export function TutorialSummaryTemplate({
 
       {/* Prerequisites */}
       {tutorialData?.prerequisites && tutorialData.prerequisites.length > 0 && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>📋</span>
             前置准备
           </h2>
@@ -68,7 +68,7 @@ export function TutorialSummaryTemplate({
             {tutorialData.prerequisites.map((item, index) => (
               <li
                 key={index}
-                className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2 text-sm text-zinc-700"
+                className="flex items-center gap-2 rounded-lg bg-bb-surface-sub p-2 text-sm text-bb-text-sec"
               >
                 <span className="text-emerald-500">✓</span>
                 {item}
@@ -80,8 +80,8 @@ export function TutorialSummaryTemplate({
 
       {/* Steps Timeline */}
       {tutorialData?.steps && tutorialData.steps.length > 0 && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
+          <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>📝</span>
             操作步骤
           </h2>
@@ -91,11 +91,11 @@ export function TutorialSummaryTemplate({
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
                   {index + 1}
                 </div>
-                <div className="flex-1 rounded-lg bg-zinc-50 p-3">
-                  <p className="mb-1 text-sm font-medium text-zinc-900">
+                <div className="flex-1 rounded-lg bg-bb-surface-sub p-3">
+                  <p className="mb-1 text-sm font-medium text-bb-text">
                     {step.title}
                   </p>
-                  <p className="text-sm text-zinc-600">{step.description}</p>
+                  <p className="text-sm text-bb-text-muted">{step.description}</p>
                 </div>
               </div>
             ))}
@@ -105,8 +105,8 @@ export function TutorialSummaryTemplate({
 
       {/* Key Parameters */}
       {tutorialData?.keyParams && tutorialData.keyParams.length > 0 && (
-        <div className="rounded-xl border border-emerald-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-emerald-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>⚙️</span>
             关键参数 / 工具
           </h2>
@@ -114,7 +114,7 @@ export function TutorialSummaryTemplate({
             {tutorialData.keyParams.map((param, index) => (
               <div
                 key={index}
-                className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-sm text-zinc-700"
+                className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-sm text-bb-text-sec"
               >
                 {param}
               </div>
@@ -157,18 +157,18 @@ export function TutorialSummaryTemplate({
 
       {/* Markdown Content */}
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {/* Timestamp */}
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}

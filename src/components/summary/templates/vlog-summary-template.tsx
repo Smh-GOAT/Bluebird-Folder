@@ -45,7 +45,7 @@ export function VlogSummaryTemplate({
       {/* Mood */}
       {vlogData?.mood && (
         <div className="flex items-center gap-2">
-          <span className="text-sm text-zinc-500">氛围：</span>
+          <span className="text-sm text-bb-text-muted">氛围：</span>
           <span className="inline-flex items-center rounded-full bg-cyan-100 px-3 py-1 text-sm font-medium text-cyan-700">
             {vlogData.mood}
           </span>
@@ -54,8 +54,8 @@ export function VlogSummaryTemplate({
 
       {/* Timeline */}
       {vlogData?.timeline && vlogData.timeline.length > 0 && (
-        <div className="rounded-xl border border-cyan-200 bg-white p-4">
-          <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-cyan-200 bg-bb-surface p-4">
+          <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>⏱️</span>
             时间线
           </h2>
@@ -63,10 +63,10 @@ export function VlogSummaryTemplate({
             <div className="absolute bottom-2 left-2 top-2 w-0.5 bg-cyan-200"></div>
             {vlogData.timeline.map((event, index) => (
               <div key={index} className="relative">
-                <div className="absolute -left-4 top-1 h-3 w-3 rounded-full border-2 border-cyan-400 bg-white"></div>
+                <div className="absolute -left-4 top-1 h-3 w-3 rounded-full border-2 border-cyan-400 bg-bb-surface"></div>
                 <div className="rounded-lg bg-cyan-50 p-3">
                   <div className="mb-1 text-xs font-medium text-cyan-700">{event.time}</div>
-                  <p className="text-sm text-zinc-700">{event.event}</p>
+                  <p className="text-sm text-bb-text-sec">{event.event}</p>
                 </div>
               </div>
             ))}
@@ -76,8 +76,8 @@ export function VlogSummaryTemplate({
 
       {/* Experiences */}
       {vlogData?.experiences && vlogData.experiences.length > 0 && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>📝</span>
             主要经历
           </h2>
@@ -85,7 +85,7 @@ export function VlogSummaryTemplate({
             {vlogData.experiences.map((exp, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="mt-1 text-cyan-500">•</span>
-                <span className="text-sm text-zinc-700">{exp}</span>
+                <span className="text-sm text-bb-text-sec">{exp}</span>
               </li>
             ))}
           </ul>
@@ -103,7 +103,7 @@ export function VlogSummaryTemplate({
             {vlogData.highlights.map((highlight, index) => (
               <div
                 key={index}
-                className="rounded-lg border border-cyan-200 bg-white p-3 text-sm text-zinc-700"
+                className="rounded-lg border border-cyan-200 bg-bb-surface p-3 text-sm text-bb-text-sec"
               >
                 {highlight}
               </div>
@@ -114,13 +114,13 @@ export function VlogSummaryTemplate({
 
       {/* Overall Feeling */}
       {vlogData?.overallFeeling && (
-        <div className="rounded-xl border border-cyan-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-cyan-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>💭</span>
             总体感受
           </h2>
           <div className="rounded-lg bg-cyan-50 p-3">
-            <p className="text-sm text-zinc-700">{vlogData.overallFeeling}</p>
+            <p className="text-sm text-bb-text-sec">{vlogData.overallFeeling}</p>
           </div>
         </div>
       )}
@@ -141,18 +141,18 @@ export function VlogSummaryTemplate({
 
       {/* Markdown Content */}
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {/* Timestamp */}
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}

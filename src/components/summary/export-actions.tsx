@@ -119,10 +119,20 @@ export function ExportActions({ history }: ExportActionsProps) {
         </button>
 
         {showDropdown && (
-          <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg">
+          <div
+            className="absolute right-0 z-20 mt-1 w-56 py-1 shadow-panel"
+            style={{
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--border)",
+              background: "var(--surface)",
+            }}
+          >
             <button
               type="button"
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors disabled:opacity-50"
+              style={{ color: "var(--text-sec)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               onClick={() => {
                 exportSRT();
                 setShowDropdown(false);
@@ -133,10 +143,15 @@ export function ExportActions({ history }: ExportActionsProps) {
               导出 SRT 字幕
             </button>
 
-            <div className="px-4 py-2 hover:bg-zinc-50">
+            <div
+              className="px-4 py-2 transition-colors"
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
               <button
                 type="button"
-                className="flex w-full items-center gap-2 text-left text-sm text-zinc-700 disabled:opacity-50"
+                className="flex w-full items-center gap-2 text-left text-sm disabled:opacity-50"
+                style={{ color: "var(--text-sec)" }}
                 onClick={() => {
                   exportTXT();
                   setShowDropdown(false);
@@ -146,7 +161,7 @@ export function ExportActions({ history }: ExportActionsProps) {
                 <span>📄</span>
                 导出 TXT 文本
               </button>
-              <label className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
+              <label className="mt-1 flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
                 <input
                   type="checkbox"
                   checked={includeTimestamps}
@@ -157,15 +172,15 @@ export function ExportActions({ history }: ExportActionsProps) {
               </label>
             </div>
 
-            <div className="mx-2 my-1 h-px bg-zinc-100" />
+            <div className="mx-2 my-1 h-px" style={{ background: "var(--border-sub)" }} />
 
             <button
               type="button"
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
-              onClick={() => {
-                exportMarkdown();
-                setShowDropdown(false);
-              }}
+              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors"
+              style={{ color: "var(--text-sec)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              onClick={() => { exportMarkdown(); setShowDropdown(false); }}
             >
               <span>📋</span>
               导出 Markdown
@@ -173,11 +188,11 @@ export function ExportActions({ history }: ExportActionsProps) {
 
             <button
               type="button"
-              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
-              onClick={() => {
-                exportJSON();
-                setShowDropdown(false);
-              }}
+              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors"
+              style={{ color: "var(--text-sec)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              onClick={() => { exportJSON(); setShowDropdown(false); }}
             >
               <span>🔧</span>
               导出 JSON

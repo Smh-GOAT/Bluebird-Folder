@@ -44,8 +44,8 @@ export function InterviewSummaryTemplate({
 
       {/* Core Topics */}
       {interviewData?.coreTopics && interviewData.coreTopics.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-amber-200 bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>📋</span>
             核心议题
           </h2>
@@ -53,7 +53,7 @@ export function InterviewSummaryTemplate({
             {interviewData.coreTopics.map((topic, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="mt-1 text-amber-500">•</span>
-                <span className="text-sm text-zinc-700">{topic}</span>
+                <span className="text-sm text-bb-text-sec">{topic}</span>
               </li>
             ))}
           </ul>
@@ -62,8 +62,8 @@ export function InterviewSummaryTemplate({
 
       {/* Key Opinions */}
       {interviewData?.keyOpinions && interviewData.keyOpinions.length > 0 && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>💭</span>
             关键观点
           </h2>
@@ -73,7 +73,7 @@ export function InterviewSummaryTemplate({
                 key={index}
                 className="rounded-lg border-l-4 border-amber-400 bg-amber-50/50 p-3"
               >
-                <p className="text-sm text-zinc-700">{opinion}</p>
+                <p className="text-sm text-bb-text-sec">{opinion}</p>
               </div>
             ))}
           </div>
@@ -91,7 +91,7 @@ export function InterviewSummaryTemplate({
             {interviewData.quotes.map((quote, index) => (
               <blockquote
                 key={index}
-                className="border-l-4 border-amber-400 bg-white/70 p-3 text-sm italic text-zinc-700"
+                className="border-l-4 border-amber-400 bg-bb-surface p-3 text-sm italic text-bb-text-sec"
               >
                 &ldquo;{quote}&rdquo;
               </blockquote>
@@ -102,13 +102,13 @@ export function InterviewSummaryTemplate({
 
       {/* Dialogue Flow */}
       {interviewData?.dialogueFlow && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-bb-text">
             <span>🔄</span>
             对话脉络
           </h2>
-          <div className="rounded-lg bg-zinc-50 p-3">
-            <p className="text-sm text-zinc-700">{interviewData.dialogueFlow}</p>
+          <div className="rounded-lg bg-bb-surface-sub p-3">
+            <p className="text-sm text-bb-text-sec">{interviewData.dialogueFlow}</p>
           </div>
         </div>
       )}
@@ -129,18 +129,18 @@ export function InterviewSummaryTemplate({
 
       {/* Markdown Content */}
       {summaryMarkdown ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4">
+        <div className="rounded-xl border border-bb-border bg-bb-surface p-4">
           <MarkdownRenderer content={summaryMarkdown} />
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50">
-          <p className="text-sm text-zinc-400">暂无总结内容</p>
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-bb-border bg-bb-surface-sub">
+          <p className="text-sm text-bb-text-subtle">暂无总结内容</p>
         </div>
       )}
 
       {/* Timestamp */}
       {meta?.generatedAt && (
-        <p className="text-right text-xs text-zinc-400">
+        <p className="text-right text-xs text-bb-text-subtle">
           生成于 {new Date(meta.generatedAt).toLocaleString("zh-CN")}
         </p>
       )}
