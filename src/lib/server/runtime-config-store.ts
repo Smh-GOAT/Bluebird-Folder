@@ -83,6 +83,17 @@ export function getRuntimeConfig() {
   };
 }
 
+/** Returns only user-set overrides (not merged with .env) */
+export function getOverridesOnly() {
+  const store = getStore();
+  return {
+    bilibiliCookie: store.bilibiliCookie ?? "",
+    bilibiliUserAgent: store.bilibiliUserAgent ?? "",
+    xiaohongshuCookie: store.xiaohongshuCookie ?? "",
+    xiaohongshuUserAgent: store.xiaohongshuUserAgent ?? "",
+  };
+}
+
 export function setRuntimeConfig(input: RuntimeOverride) {
   const store = getStore();
   if (typeof input.bilibiliCookie === "string") {

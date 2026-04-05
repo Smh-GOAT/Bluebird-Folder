@@ -416,7 +416,6 @@ body {
     background: var(--surface);
     box-shadow: 0 0 0 3px var(--primary-glow);
   }
-
   /* ── Nav / sidebar items ── */
   .ui-nav-item {
     @apply flex items-center gap-2 cursor-pointer;

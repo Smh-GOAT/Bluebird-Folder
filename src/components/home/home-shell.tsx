@@ -4,11 +4,19 @@ import { useState } from "react";
 import Link from "next/link";
 import { HomeSidebar } from "@/components/home/home-sidebar";
 import { LinkInputPanel } from "@/components/home/link-input-panel";
+import { AnalysisQueueList } from "@/components/home/analysis-queue-list";
+import { VideoDetailView } from "@/components/home/video-detail-view";
 import { ModeToggle } from "@/components/layout/theme-selector";
+import { useAnalysisQueue } from "@/lib/analysis-queue-context";
 
-export function HomeShell() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hasParsed, setHasParsed] = useState(false);
+interface HomeShellProps {
+  initialSelectedId?: string | null;
+}
+
+export function HomeShell({ initialSelectedId }: HomeShellProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
+  const { refreshKey } = useAnalysisQueue();
 
   return (
     <div className="relative min-h-screen" style={{ background: "var(--bg)" }}>
@@ -20,7 +28,7 @@ export function HomeShell() {
           borderBottom: "1px solid var(--border-sub)",
         }}
       >
-        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 max-w-[1760px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -34,8 +42,9 @@ export function HomeShell() {
               </svg>
             </button>
             <h1
-              className="text-lg font-semibold tracking-tight"
+              className="text-lg font-semibold tracking-tight cursor-pointer"
               style={{ color: "var(--text)" }}
+              onClick={() => setSelectedId(null)}
             >
               Bluebird Folder
             </h1>
@@ -57,80 +66,61 @@ export function HomeShell() {
         </div>
       </header>
 
-      {/* ── Sidebar overlay ── */}
-      <aside
-        className={`fixed left-0 top-14 z-30 h-[calc(100vh-3.5rem)] w-[280px] transform backdrop-blur-glass transition-transform duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-        style={{
-          background: "var(--sidebar-bg)",
-          borderRight: "1px solid var(--border-sub)",
-        }}
-      >
-        <div className="h-full overflow-y-auto p-4">
-          <HomeSidebar compact />
-        </div>
-      </aside>
-
-      {/* ── Backdrop ── */}
-      {sidebarOpen ? (
-        <div
-          className="fixed inset-0 z-20 backdrop-blur-sm"
-          style={{ background: "var(--overlay)" }}
-          onClick={() => setSidebarOpen(false)}
-        />
-      ) : null}
-
-      {/* ── Main ── */}
-      <main
-        className={`min-h-screen transition-all duration-300 ${sidebarOpen ? "lg:pl-[280px]" : ""}`}
-      >
-        <div className="mx-auto min-h-screen max-w-[1600px] px-4 py-6 pt-20 sm:px-6 lg:px-8 lg:py-8">
-          <div
-            className={`transition-all duration-500 ${!hasParsed ? "flex min-h-[60vh] flex-col items-center justify-center" : ""}`}
-          >
-            <LinkInputPanel centered={!hasParsed} onParsed={() => setHasParsed(true)} />
-
-            {!hasParsed ? (
-              <div className="mt-12 max-w-md text-center">
-                <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                  支持 Bilibili、小红书等主流平台
-                </p>
-                <div className="mt-6 flex items-center justify-center gap-6 text-xs" style={{ color: "var(--text-subtle)" }}>
-                  <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                    自动提取字幕
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--primary)" }} />
-                    AI 智能总结
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
-                    一键导出
-                  </span>
-                </div>
-              </div>
-            ) : null}
+      {/* ── Layout body ── */}
+      <div className="flex pt-14">
+        {/* ── Sidebar ── */}
+        <aside
+          className={`fixed left-0 top-14 z-30 h-[calc(100vh-3.5rem)] w-[260px] transform backdrop-blur-glass transition-transform duration-300 lg:relative lg:top-0 lg:z-auto lg:h-auto lg:min-h-[calc(100vh-3.5rem)] lg:transform-none lg:transition-none ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full lg:-ml-[260px]"
+          }`}
+          style={{
+            background: "var(--sidebar-bg)",
+            borderRight: "1px solid var(--border-sub)",
+          }}
+        >
+          <div className="h-full overflow-y-auto p-3 lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)]">
+            <button
+              type="button"
+              onClick={() => setSelectedId(null)}
+              className="ui-btn-primary mb-3 flex w-full items-center justify-center gap-1.5 py-2 text-sm font-medium"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              新建总结
+            </button>
+            <HomeSidebar
+              compact
+              refreshKey={refreshKey}
+              onSelect={(id) => setSelectedId(id)}
+              selectedId={selectedId}
+            />
           </div>
+        </aside>
 
-          {hasParsed ? (
-            <div className="mt-6">
-              <div className="ui-panel p-5">
-                <h2 className="ui-title">流程说明</h2>
-                <ol
-                  className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-6"
-                  style={{ color: "var(--text-sec)" }}
-                >
-                  <li>先输入视频链接并完成元信息 + 字幕/转写解析。</li>
-                  <li>确认解析结果后，点击"生成总结"打开自定义弹窗。</li>
-                  <li>选择模板和语言参数后，进入总结页查看三列内容并导出。</li>
-                </ol>
+        {/* ── Backdrop (mobile only) ── */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-20 backdrop-blur-sm lg:hidden"
+            style={{ background: "var(--overlay)" }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* ── Main Content ── */}
+        <main className="min-h-[calc(100vh-3.5rem)] flex-1 overflow-x-hidden">
+          <div className="mx-auto max-w-[1440px] px-4 py-4 sm:px-6 lg:px-6 lg:py-5">
+            {selectedId ? (
+              <VideoDetailView historyId={selectedId} />
+            ) : (
+              <div className="mx-auto max-w-2xl pt-[12vh]">
+                <LinkInputPanel />
+                <AnalysisQueueList onSelect={(id) => setSelectedId(id)} />
               </div>
-            </div>
-          ) : null}
-        </div>
-      </main>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

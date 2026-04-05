@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth, openAccountCenter, logout } from "@/lib/forsion/auth";
 import { CreditBalance } from "@/components/layout/credit-balance";
 import { authFetch } from "@/lib/forsion/fetch";
@@ -25,10 +24,12 @@ interface HistoryResponse {
 
 interface HomeSidebarProps {
   compact?: boolean;
+  refreshKey?: number;
+  onSelect?: (historyId: string) => void;
+  selectedId?: string | null;
 }
 
-export function HomeSidebar({ compact = false }: HomeSidebarProps) {
-  const router = useRouter();
+export function HomeSidebar({ compact = false, refreshKey, onSelect, selectedId }: HomeSidebarProps) {
   const { user: forsionUser } = useAuth();
   const [folders, setFolders] = useState<Array<FolderItem & { count: number }>>([]);
   const [histories, setHistories] = useState<VideoHistoryItem[]>([]);
@@ -76,6 +77,16 @@ export function HomeSidebar({ compact = false }: HomeSidebarProps) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-fetch when analysis queue completes an item
+  useEffect(() => {
+    if (refreshKey && refreshKey > 0) {
+      refreshAll().catch((error) => {
+        console.error("[home-sidebar] refresh failed", error);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
 
   const accountDisplayName = forsionUser?.nickname || forsionUser?.username || null;
 
@@ -302,7 +313,7 @@ export function HomeSidebar({ compact = false }: HomeSidebarProps) {
                                 type="button"
                                 className="w-full truncate rounded-md px-2 py-1.5 text-left text-sm transition-colors"
                                 style={{ color: "var(--text-sec)" }}
-                                onClick={() => router.push(`/summary/${item.id}`)}
+                                onClick={() => onSelect?.(item.id)}
                                 title={item.title}
                               >
                                 {item.title}
@@ -372,26 +383,34 @@ export function HomeSidebar({ compact = false }: HomeSidebarProps) {
                 </p>
               ) : null}
               <ul className="space-y-1.5">
-                {filteredHistories.map((item) => (
-                  <li
-                    key={item.id}
-                    draggable
-                    onDragStart={(event) => {
-                      event.dataTransfer.setData("historyId", item.id);
-                    }}
-                    className="ui-card cursor-grab active:cursor-grabbing"
-                    style={{ padding: compact ? "8px 10px" : "10px 12px" }}
-                  >
-                    <button
-                      type="button"
-                      className="line-clamp-2 w-full text-left text-[15px] font-medium leading-6"
-                      style={{ color: "var(--text)" }}
-                      onClick={() => router.push(`/summary/${item.id}`)}
+                {filteredHistories.map((item) => {
+                  const isActive = selectedId === item.id;
+                  return (
+                    <li
+                      key={item.id}
+                      draggable
+                      onDragStart={(event) => {
+                        event.dataTransfer.setData("historyId", item.id);
+                      }}
+                      className="ui-card cursor-grab active:cursor-grabbing"
+                      style={{
+                        padding: compact ? "8px 10px" : "10px 12px",
+                        ...(isActive
+                          ? { borderColor: "var(--primary)", background: "var(--primary-tint)" }
+                          : {}),
+                      }}
                     >
-                      {item.title}
-                    </button>
-                  </li>
-                ))}
+                      <button
+                        type="button"
+                        className="line-clamp-2 w-full text-left text-[15px] font-medium leading-6"
+                        style={{ color: isActive ? "var(--primary)" : "var(--text)" }}
+                        onClick={() => onSelect?.(item.id)}
+                      >
+                        {item.title}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
               {!loading && filteredHistories.length === 0 && searchQuery ? (
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
@@ -416,15 +435,24 @@ export function HomeSidebar({ compact = false }: HomeSidebarProps) {
             className="flex w-full items-center gap-2 rounded-t-sm px-2 py-1.5 text-left transition-colors"
             onClick={openAccountCenter}
           >
-            <span
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
-              style={{
-                background: "var(--primary-tint)",
-                color: "var(--primary)",
-              }}
-            >
-              {accountDisplayName ? accountDisplayName.slice(0, 1).toUpperCase() : "账"}
-            </span>
+            {forsionUser?.avatar ? (
+              <img
+                src={forsionUser.avatar}
+                alt=""
+                className="h-7 w-7 rounded-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+                style={{
+                  background: "var(--primary-tint)",
+                  color: "var(--primary)",
+                }}
+              >
+                {accountDisplayName ? accountDisplayName.slice(0, 1).toUpperCase() : "账"}
+              </span>
+            )}
             <span className="min-w-0">
               <span
                 className="block truncate text-sm"

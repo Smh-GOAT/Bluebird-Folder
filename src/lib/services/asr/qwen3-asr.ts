@@ -3,7 +3,7 @@ import path from "node:path";
 import type { SubtitleSegment } from "@/types";
 import { getRuntimeConfig } from "@/lib/server/runtime-config-store";
 
-function splitTextToSegments(text: string): SubtitleSegment[] {
+function splitTextToSegments(text: string, durationSeconds?: number): SubtitleSegment[] {
   const lines = text
     .split(/[。！？!?]\s*/)
     .map((line) => line.trim())
@@ -12,6 +12,24 @@ function splitTextToSegments(text: string): SubtitleSegment[] {
     return [];
   }
 
+  // Distribute timestamps proportionally by character count when duration is known
+  if (durationSeconds && durationSeconds > 0) {
+    const totalChars = lines.reduce((sum, line) => sum + line.length, 0);
+    let currentTime = 0;
+    return lines.map((line) => {
+      const segDuration = (line.length / totalChars) * durationSeconds;
+      const start = currentTime;
+      const end = currentTime + segDuration;
+      currentTime = end;
+      return {
+        start: Number(start.toFixed(3)),
+        end: Number(end.toFixed(3)),
+        text: line,
+      };
+    });
+  }
+
+  // Fallback: fixed 8-second intervals (no duration info available)
   return lines.map((line, index) => ({
     start: index * 8,
     end: index * 8 + 8,
@@ -19,7 +37,7 @@ function splitTextToSegments(text: string): SubtitleSegment[] {
   }));
 }
 
-export async function transcribeByQwen3Asr(audioPath: string) {
+export async function transcribeByQwen3Asr(audioPath: string, durationSeconds?: number) {
   const config = getRuntimeConfig();
   if (!config.qwenAsrApiKey) {
     throw new Error("未配置 QWEN3_ASR_API_KEY，无法执行 ASR");
@@ -78,6 +96,6 @@ export async function transcribeByQwen3Asr(audioPath: string) {
 
   return {
     fullText,
-    segments: splitTextToSegments(fullText)
+    segments: splitTextToSegments(fullText, durationSeconds)
   };
 }

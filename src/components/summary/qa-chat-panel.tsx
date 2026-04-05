@@ -24,6 +24,10 @@ export function QAChatPanel({ historyId, onReferenceClick }: QAChatPanelProps) {
   useEffect(() => { scrollToBottom(); }, [messages]);
 
   useEffect(() => {
+    // Clear previous session data when switching history
+    setMessages([]);
+    setSessionId(undefined);
+
     if (!historyId) return;
     const loadSession = async () => {
       try {

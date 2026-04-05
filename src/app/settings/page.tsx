@@ -2,6 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "@/lib/theme-provider";
+import {
+  getSummaryPreferences,
+  saveSummaryPreferences,
+  type SummaryPreferences,
+} from "@/lib/summary-preferences";
+import {
+  TEMPLATE_REGISTRY,
+  DETAIL_LEVEL_CONFIG,
+  type SummaryTemplate,
+} from "@/types/summary";
+import Link from "next/link";
+import { ThemedSelect } from "@/components/layout/themed-select";
 
 interface RuntimeConfigResponse {
   code: number;
@@ -35,6 +47,17 @@ const THEME_OPTIONS = [
   },
 ] as const;
 
+const TEMPLATES: SummaryTemplate[] = [
+  "general","interview","travel","academic","tutorial",
+  "news","meeting","podcast","review","vlog"
+];
+
+const TEMPLATE_ICONS: Record<SummaryTemplate, string> = {
+  general: "📚", interview: "🎙️", travel: "✈️", academic: "📗",
+  tutorial: "📘", news: "📰", meeting: "📋", podcast: "🎧",
+  review: "⭐", vlog: "📹"
+};
+
 export default function SettingsPage() {
   const { theme, mode, setTheme, toggleMode } = useTheme();
   const [biliCookie, setBiliCookie] = useState("");
@@ -42,6 +65,10 @@ export default function SettingsPage() {
   const [xhsCookie, setXhsCookie] = useState("");
   const [xhsUserAgent, setXhsUserAgent] = useState("");
   const [message, setMessage] = useState("");
+
+  // Summary preferences
+  const [summaryPrefs, setSummaryPrefs] = useState<SummaryPreferences>(getSummaryPreferences);
+  const [summaryMessage, setSummaryMessage] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -75,7 +102,20 @@ export default function SettingsPage() {
 
   return (
     <main className="mx-auto max-w-3xl p-6" style={{ background: "var(--bg)", minHeight: "100vh" }}>
-      <h1 className="text-xl font-semibold" style={{ color: "var(--text)" }}>设置</h1>
+      <Link
+        href="/"
+        className="ui-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium"
+      >
+        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            fillRule="evenodd"
+            d="M11.78 4.22a.75.75 0 010 1.06L8.06 9h7.19a.75.75 0 010 1.5H8.06l3.72 3.72a.75.75 0 11-1.06 1.06l-5-5a.75.75 0 010-1.06l5-5a.75.75 0 011.06 0z"
+            clipRule="evenodd"
+          />
+        </svg>
+        返回
+      </Link>
+      <h1 className="mt-4 text-xl font-semibold" style={{ color: "var(--text)" }}>设置</h1>
       <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
         管理外观偏好、模型提供商配置和平台访问头。
       </p>
@@ -190,6 +230,103 @@ export default function SettingsPage() {
               }}
             />
           </button>
+        </div>
+      </section>
+
+      {/* ── 默认总结设置 ── */}
+      <section
+        className="mt-6 p-5"
+        style={{
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--border)",
+          background: "var(--surface)",
+        }}
+      >
+        <h2 className="text-sm font-semibold" style={{ color: "var(--text)" }}>默认总结设置</h2>
+        <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+          新视频解析完成后，将自动使用以下配置生成总结。
+        </p>
+
+        {/* Template */}
+        <label className="mt-4 block text-xs font-medium" style={{ color: "var(--text-sec)" }}>默认模板</label>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {TEMPLATES.map((t) => {
+            const isActive = summaryPrefs.template === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setSummaryPrefs((p) => ({ ...p, template: t }))}
+                className="flex flex-col items-center p-2 text-center transition-all"
+                style={{
+                  borderRadius: "var(--radius-sm)",
+                  border: isActive ? "1.5px solid var(--primary)" : "1.5px solid var(--border-sub)",
+                  background: isActive ? "var(--primary-tint)" : "var(--surface-sub)",
+                  color: isActive ? "var(--primary)" : "var(--text-sec)",
+                  cursor: "pointer",
+                }}
+              >
+                <span className="text-lg">{TEMPLATE_ICONS[t]}</span>
+                <span className="mt-0.5 text-[11px] font-medium">{TEMPLATE_REGISTRY[t].name}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Language + Detail */}
+        <div className="mt-4 flex flex-wrap gap-3">
+          <div className="min-w-[140px] flex-1">
+            <label className="block text-xs font-medium" style={{ color: "var(--text-sec)" }}>语言</label>
+            <ThemedSelect
+              value={summaryPrefs.language}
+              onChange={(v) => setSummaryPrefs((p) => ({ ...p, language: v }))}
+              options={[
+                { value: "zh", label: "简体中文" },
+                { value: "en", label: "English" },
+              ]}
+              className="mt-1"
+            />
+          </div>
+          <div className="min-w-[180px] flex-1">
+            <label className="block text-xs font-medium" style={{ color: "var(--text-sec)" }}>详细程度</label>
+            <ThemedSelect
+              value={summaryPrefs.detail}
+              onChange={(v) => setSummaryPrefs((p) => ({ ...p, detail: v as "brief" | "standard" | "detailed" }))}
+              options={[
+                { value: "brief", label: DETAIL_LEVEL_CONFIG.concise.label },
+                { value: "standard", label: DETAIL_LEVEL_CONFIG.standard.label },
+                { value: "detailed", label: DETAIL_LEVEL_CONFIG.detailed.label },
+              ]}
+              className="mt-1"
+            />
+          </div>
+        </div>
+
+        {/* Custom prompt */}
+        <label className="mt-4 block text-xs font-medium" style={{ color: "var(--text-sec)" }}>自定义总结提示词（可选）</label>
+        <textarea
+          value={summaryPrefs.customPrompt}
+          onChange={(e) => setSummaryPrefs((p) => ({ ...p, customPrompt: e.target.value }))}
+          className="ui-textarea mt-1"
+          style={{ height: "80px" }}
+          placeholder="例如：请特别关注技术细节和代码示例..."
+        />
+
+        <div className="mt-4 flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              saveSummaryPreferences(summaryPrefs);
+              setSummaryMessage("总结偏好已保存");
+              setTimeout(() => setSummaryMessage(""), 2000);
+            }}
+            className="ui-btn-primary px-4 py-2 text-sm"
+          >
+            保存总结偏好
+          </button>
+          {summaryMessage && (
+            <span className="text-xs" style={{ color: "var(--primary)" }}>{summaryMessage}</span>
+          )}
         </div>
       </section>
 

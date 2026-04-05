@@ -217,8 +217,7 @@ export function buildPrompt(params: PromptBuildParams): string {
 - 模板说明：${templateInfo.description}
 - 分析重点：${templateInfo.promptFocus}
 - 详细程度：${detailConfig.label} (${detail})
-- 目标字数：${detailConfig.targetWords}
-- 字数策略：${detailConfig.instruction}
+- 内容策略：${detailConfig.instruction}
 - 关键要点数量：约 ${level.points} 个
 - 章节数量：约 ${level.chapters} 个
 - 时间戳：${showTimestamp ? "需要" : "不需要"}
@@ -242,11 +241,11 @@ ${jsonBody}
 1. ${emojiPrefix}确保输出是纯 JSON，不要包含任何额外说明、Markdown 标记或解释。
 2. ${emojiPrefix}所有字符串必须使用双引号。
 3. ${emojiPrefix}${timestampInstruction}
-4. ${emojiPrefix}保持模板结构不变，但内容展开程度必须符合“${detailConfig.label}”档位。
-5. ${emojiPrefix}总字数尽量控制在 ${detailConfig.targetWords} 区间内。
-6. ${emojiPrefix}${detailConfig.instruction}
+4. ${emojiPrefix}保持模板结构不变，但内容展开程度必须符合”${detailConfig.label}”档位。
+5. ${emojiPrefix}${detailConfig.instruction}
+6. ${emojiPrefix}总结长度根据原始内容的丰富程度自适应，不设硬性字数限制。内容多则充分展开，内容少则精炼概括。
 7. ${emojiPrefix}如果字幕内容很多，优先保留关键信息、步骤、结论、背景和注意事项，避免重复表达。
-8. ${emojiPrefix}如果字幕内容较少，也不要为了凑字数编造信息，应在现有信息内尽量完整总结。
+8. ${emojiPrefix}如果字幕内容较少，不要为了凑字数编造信息，应在现有信息内尽量完整总结。
 9. ${emojiPrefix}章节划分要合理，标题要概括该部分核心内容。
 10. ${emojiPrefix}标签应是视频关键信息，便于分类和检索。
 11. ${emojiPrefix}importance 取值范围为 1-5，5 为最重要。

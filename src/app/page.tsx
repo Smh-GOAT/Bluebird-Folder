@@ -1,5 +1,10 @@
 import { HomeShell } from "@/components/home/home-shell";
 
-export default function HomePage() {
-  return <HomeShell />;
+interface HomePageProps {
+  searchParams: Promise<{ selected?: string }>;
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const params = await searchParams;
+  return <HomeShell initialSelectedId={params.selected ?? null} />;
 }

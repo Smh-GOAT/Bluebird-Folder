@@ -1,0 +1,9 @@
+.git
+.cursor
+.venv
+.next
+node_modules
+docs
+*.log
+*.md
+!README.md

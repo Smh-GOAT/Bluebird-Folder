@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       showTimestamp?: boolean;
       showEmoji?: boolean;
       modelId?: string;
+      force?: boolean;
     };
 
     const { historyId } = body;
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (history.summaryJson && history.summaryMarkdown) {
+    if (!body.force && history.summaryJson && history.summaryMarkdown) {
       return NextResponse.json({
         code: 0,
         data: {

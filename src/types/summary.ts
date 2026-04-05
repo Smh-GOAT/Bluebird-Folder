@@ -198,18 +198,18 @@ export interface TemplateInfo {
 export const DETAIL_LEVEL_CONFIG: Record<"concise" | "standard" | "detailed", DetailLevelConfig> = {
   concise: {
     label: "简洁",
-    targetWords: "300-450",
+    targetWords: "根据内容自适应",
     instruction: "仅保留最重要的信息，减少展开，控制小节数量，每节用1-2句话概括，避免冗长描述。"
   },
   standard: {
     label: "普通",
-    targetWords: "600-900",
-    instruction: "保持完整结构，适度展开每个部分，兼顾概览与细节，确保可读性和信息完整性。"
+    targetWords: "根据内容自适应",
+    instruction: "根据原始内容的丰富程度自适应总结长度。内容多则充分展开，内容少则精炼概括，不要为了凑字数而注水，也不要遗漏关键信息。"
   },
   detailed: {
     label: "具体",
-    targetWords: "1200-1800",
-    instruction: "在保持模板结构不变的前提下充分展开内容，补充步骤、背景、论证、例子或注意事项，但避免重复表达。"
+    targetWords: "根据内容自适应",
+    instruction: "在保持模板结构不变的前提下充分展开内容，补充步骤、背景、论证、例子或注意事项，但避免重复表达。长度根据原始内容丰富程度自适应。"
   }
 };
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { successResponse, errorResponse } from "@/lib/services/common/api-response";
 import { ErrorCodes } from "@/lib/services/common/error-codes";
-import { getRuntimeConfig, setRuntimeConfig } from "@/lib/server/runtime-config-store";
+import { getRuntimeConfig, getOverridesOnly, setRuntimeConfig } from "@/lib/server/runtime-config-store";
 
 const updateSchema = z.object({
   bilibiliCookie: z.string().optional(),
@@ -11,26 +11,14 @@ const updateSchema = z.object({
 });
 
 export async function GET() {
-  const runtime = getRuntimeConfig();
-  return successResponse({
-    bilibiliCookie: runtime.bilibiliCookie,
-    bilibiliUserAgent: runtime.bilibiliUserAgent,
-    xiaohongshuCookie: runtime.xiaohongshuCookie,
-    xiaohongshuUserAgent: runtime.xiaohongshuUserAgent
-  });
+  return successResponse(getOverridesOnly());
 }
 
 export async function POST(request: Request) {
   try {
     const body = updateSchema.parse(await request.json());
     setRuntimeConfig(body);
-    const runtime = getRuntimeConfig();
-    return successResponse({
-      bilibiliCookie: runtime.bilibiliCookie,
-      bilibiliUserAgent: runtime.bilibiliUserAgent,
-      xiaohongshuCookie: runtime.xiaohongshuCookie,
-      xiaohongshuUserAgent: runtime.xiaohongshuUserAgent
-    });
+    return successResponse(getOverridesOnly());
   } catch (error) {
     if (error instanceof z.ZodError) {
       return errorResponse(ErrorCodes.BAD_REQUEST, "设置项格式错误");

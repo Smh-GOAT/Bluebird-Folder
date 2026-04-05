@@ -124,7 +124,7 @@ export async function cleanupSliceArtifacts(workDir: string): Promise<void> {
   
   try {
     await fs.rm(workDir, { recursive: true, force: true });
-  } catch {
-    // 清理失败时静默处理
+  } catch (error) {
+    console.warn(`[cleanup] failed to remove slice dir ${workDir}:`, error);
   }
 }

@@ -13,6 +13,10 @@ import { VideoPlayer } from "@/components/video/video-player";
 import { PlayerPlaceholder } from "@/components/video/player-placeholder";
 import { VideoTimeProvider } from "@/components/summary/video-time-context";
 import { ModeToggle } from "@/components/layout/theme-selector";
+import { ResizeHandle } from "@/components/layout/resize-handle";
+import { AnalysisQueueIndicator } from "@/components/home/analysis-queue-indicator";
+import { useAnalysisQueue } from "@/lib/analysis-queue-context";
+import { useResizable } from "@/hooks/use-resizable";
 import type { VideoHistoryItem, SubtitleReference } from "@/types";
 import type { SummaryDetailLevel, SummaryStructured } from "@/types/summary";
 
@@ -22,6 +26,7 @@ interface SummaryShellProps {
 
 export function SummaryShell({ summaryId }: SummaryShellProps) {
   const searchParams = useSearchParams();
+  const { refreshKey } = useAnalysisQueue();
   const [history, setHistory] = useState<VideoHistoryItem | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -186,6 +191,22 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
   const isLoading = isGenerating || translateSubtitles;
   const currentError = generateError || translateError;
 
+  const middleCol = useResizable({
+    storageKey: "shell-mid-w",
+    defaultSize: 440,
+    min: 320,
+    max: 700,
+    direction: "horizontal",
+  });
+
+  const videoHeight = useResizable({
+    storageKey: "shell-video-h",
+    defaultSize: 280,
+    min: 160,
+    max: 600,
+    direction: "vertical",
+  });
+
   return (
     <main className="min-h-screen" style={{ background: "var(--bg)" }}>
       <div className="mx-auto w-[96vw] max-w-[1760px] space-y-3 px-4 py-3 sm:px-5 lg:px-6 lg:py-4">
@@ -219,19 +240,25 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
             </div>
             <div className="flex items-center gap-2">
               <ExportActions history={history} />
+              <AnalysisQueueIndicator />
               <ModeToggle />
             </div>
           </div>
         </header>
 
         <VideoTimeProvider>
-          <div className="grid min-h-[calc(100vh-8.5rem)] grid-cols-1 gap-4 lg:grid-cols-[220px_400px_minmax(680px,1fr)] xl:grid-cols-[220px_440px_minmax(720px,1fr)]">
-            <HomeSidebar compact />
+          <div className="flex min-h-[calc(100vh-8.5rem)]">
+            <div className="w-[220px] shrink-0">
+              <HomeSidebar compact refreshKey={refreshKey} />
+            </div>
 
-            <section className="ui-panel space-y-3 p-3.5 lg:p-4">
-              <div className="ui-block p-3">
+            <section
+              className="ui-panel ml-4 flex flex-col gap-3 p-3.5 lg:p-4"
+              style={{ width: middleCol.size, flexShrink: 0 }}
+            >
+              <div className="ui-block flex flex-col p-3" style={{ height: videoHeight.size }}>
                 <h2 className="text-sm font-semibold" style={{ color: "var(--text)" }}>视频播放器</h2>
-                <div className="mt-2.5">
+                <div className="mt-2.5 flex-1 overflow-hidden">
                   {history?.videoUrl ? (
                     <VideoPlayer
                       videoUrl={history.videoUrl}
@@ -245,7 +272,8 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
                   )}
                 </div>
               </div>
-              <div className="ui-block flex flex-col p-3" style={{ height: "400px" }}>
+              <ResizeHandle direction="vertical" handleProps={videoHeight.handleProps} />
+              <div className="ui-block flex min-h-0 flex-1 flex-col p-3">
                 <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--text)" }}>AI 问答</h2>
                 <div className="flex-1 overflow-hidden">
                   <QAChatPanel
@@ -256,7 +284,9 @@ export function SummaryShell({ summaryId }: SummaryShellProps) {
               </div>
             </section>
 
-            <aside className="self-start lg:sticky lg:top-3 lg:h-[calc(100vh-7rem)]">
+            <ResizeHandle direction="horizontal" handleProps={middleCol.handleProps} />
+
+            <aside className="min-w-0 flex-1 self-start lg:sticky lg:top-3 lg:h-[calc(100vh-7rem)]">
               {isLoading || currentError ? (
                 <GenerateStatus
                   isGenerating={isLoading}

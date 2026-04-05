@@ -1,4 +1,4 @@
-import type { PlatformParseResult, PlatformParser, PlatformTranscriptResult } from "@/lib/services/video/platform-parser";
+import type { PlatformParseResult, PlatformParser, PlatformTranscriptResult, OnProgress } from "@/lib/services/video/platform-parser";
 import { transcribeByQwen3Asr } from "@/lib/services/asr/qwen3-asr";
 import { transcribeChunked } from "@/lib/services/asr/chunked-asr";
 import { cleanupDownloaderArtifacts, runXiaohongshuExtractor } from "@/lib/services/video/python-downloader";
@@ -149,10 +149,14 @@ export class XiaohongshuParser implements PlatformParser {
     }
   }
 
-  async fetchTranscript(url: string): Promise<PlatformTranscriptResult> {
+  async fetchTranscript(url: string, onProgress?: OnProgress): Promise<PlatformTranscriptResult> {
     const config = getRuntimeConfig();
+    let workDirToClean: string | null = null;
     try {
+      onProgress?.(5, "解析链接");
       const resolvedUrl = await resolveShortLinkIfNeeded(url);
+
+      onProgress?.(10, "下载视频");
       const downloaded = await withRetry(
         () =>
           runXiaohongshuExtractor({
@@ -163,6 +167,8 @@ export class XiaohongshuParser implements PlatformParser {
           }),
         XHS_MAX_ATTEMPTS
       );
+      workDirToClean = downloaded.workDir;
+      onProgress?.(35, "下载完成");
 
       const meta = buildMeta({
         resolvedUrl,
@@ -171,41 +177,37 @@ export class XiaohongshuParser implements PlatformParser {
 
       const shouldChunk = meta.duration > LONG_VIDEO_THRESHOLD_SECONDS;
 
-      try {
-        let asrResult;
-        if (shouldChunk) {
-          asrResult = await transcribeChunked(downloaded.audioPath, {
-            onLog: (message) => console.log(message),
-            maxAttempts: XHS_MAX_ATTEMPTS
-          });
-        } else {
-          asrResult = await withRetry(
-            () => transcribeByQwen3Asr(downloaded.audioPath),
-            XHS_MAX_ATTEMPTS
-          );
-        }
-
-        return {
-          meta,
-          subtitleSource: "asr",
-          segments: asrResult.segments,
-          fullText: asrResult.fullText
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        if (message.includes("ffmpeg") || message.includes("FfmpegNotFoundError")) {
-          throw new Error(toReadableError(error, "chunk"));
-        }
-        if (message.includes("片段") && message.includes("转写失败")) {
-          throw new Error(toReadableError(error, "chunk"));
-        }
-        if (message.includes("Qwen3-ASR") || message.includes("ASR")) {
-          throw new Error(toReadableError(error, "asr"));
-        }
-        throw new Error(toReadableError(error, "download"));
-      } finally {
-        await cleanupDownloaderArtifacts(downloaded.workDir);
+      let asrResult;
+      if (shouldChunk) {
+        asrResult = await transcribeChunked(downloaded.audioPath, {
+          onLog: (message) => {
+            console.log(message);
+            const match = message.match(/处理片段 (\d+)\/(\d+)/);
+            if (match) {
+              const current = Number(match[1]);
+              const total = Number(match[2]);
+              const pct = 40 + Math.round((current / total) * 45);
+              onProgress?.(pct, `转录片段 ${current}/${total}`);
+            }
+          },
+          maxAttempts: XHS_MAX_ATTEMPTS,
+          totalDurationSeconds: meta.duration,
+        });
+      } else {
+        onProgress?.(40, "转录音频");
+        asrResult = await withRetry(
+          () => transcribeByQwen3Asr(downloaded.audioPath, meta.duration),
+          XHS_MAX_ATTEMPTS
+        );
       }
+      onProgress?.(88, "转录完成");
+
+      return {
+        meta,
+        subtitleSource: "asr",
+        segments: asrResult.segments,
+        fullText: asrResult.fullText
+      };
     } catch (error) {
       if (error instanceof Error && error.message.includes("长视频转写失败")) {
         throw error;
@@ -214,7 +216,17 @@ export class XiaohongshuParser implements PlatformParser {
       if (message.includes("ffmpeg") || message.includes("FfmpegNotFoundError")) {
         throw new Error(toReadableError(error, "chunk"));
       }
+      if (message.includes("片段") && message.includes("转写失败")) {
+        throw new Error(toReadableError(error, "chunk"));
+      }
+      if (message.includes("Qwen3-ASR") || message.includes("ASR")) {
+        throw new Error(toReadableError(error, "asr"));
+      }
       throw new Error(toReadableError(error, "download"));
+    } finally {
+      if (workDirToClean) {
+        await cleanupDownloaderArtifacts(workDirToClean);
+      }
     }
   }
 }

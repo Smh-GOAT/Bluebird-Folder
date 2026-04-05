@@ -20,9 +20,11 @@ export interface PlatformTranscriptResult {
   fullText: string;
 }
 
+export type OnProgress = (percent: number, label: string) => void;
+
 export interface PlatformParser {
   parse(url: string): Promise<PlatformParseResult>;
-  fetchTranscript(url: string): Promise<PlatformTranscriptResult>;
+  fetchTranscript(url: string, onProgress?: OnProgress): Promise<PlatformTranscriptResult>;
 }
 
 const LONG_VIDEO_THRESHOLD_SECONDS = 300;
@@ -46,15 +48,19 @@ class BilibiliParser implements PlatformParser {
     };
   }
 
-  async fetchTranscript(url: string): Promise<PlatformTranscriptResult> {
+  async fetchTranscript(url: string, onProgress?: OnProgress): Promise<PlatformTranscriptResult> {
+    onProgress?.(5, "获取视频信息");
     const headers = buildBilibiliHeaders();
     const parsed = await fetchBilibiliMeta(url, headers);
+
+    onProgress?.(10, "检查原生字幕");
     const native = await fetchBilibiliNativeSubtitles({
       bvid: parsed.bvid,
       cid: parsed.cid,
       headers
     });
     if (native.hasNativeSubtitle && native.segments.length > 0) {
+      onProgress?.(90, "字幕获取完成");
       return {
         meta: parsed.meta,
         subtitleSource: "native",
@@ -63,12 +69,14 @@ class BilibiliParser implements PlatformParser {
       };
     }
 
+    onProgress?.(15, "下载音频");
     const config = getRuntimeConfig();
     const downloaded = await runBilibiliDownloader({
       url,
       userAgent: config.bilibiliUserAgent,
       cookie: config.bilibiliCookie
     });
+    onProgress?.(35, "音频下载完成");
 
     const shouldChunk = parsed.meta.duration > LONG_VIDEO_THRESHOLD_SECONDS;
 
@@ -76,12 +84,24 @@ class BilibiliParser implements PlatformParser {
       let asrResult;
       if (shouldChunk) {
         asrResult = await transcribeChunked(downloaded.audioPath, {
-          onLog: (message) => console.log(message),
-          maxAttempts: 2
+          onLog: (message) => {
+            console.log(message);
+            const match = message.match(/处理片段 (\d+)\/(\d+)/);
+            if (match) {
+              const current = Number(match[1]);
+              const total = Number(match[2]);
+              const pct = 40 + Math.round((current / total) * 45);
+              onProgress?.(pct, `转录片段 ${current}/${total}`);
+            }
+          },
+          maxAttempts: 2,
+          totalDurationSeconds: parsed.meta.duration,
         });
       } else {
-        asrResult = await transcribeByQwen3Asr(downloaded.audioPath);
+        onProgress?.(40, "转录音频");
+        asrResult = await transcribeByQwen3Asr(downloaded.audioPath, parsed.meta.duration);
       }
+      onProgress?.(88, "转录完成");
 
       return {
         meta: parsed.meta,

@@ -61,7 +61,7 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
 
   // Shared select style
   const selectStyle = {
-    background: "var(--surface)",
+    background: "var(--input-bg)",
     border: "1.5px solid var(--border)",
     color: "var(--text)",
     borderRadius: "var(--radius-sm)",
@@ -79,6 +79,8 @@ export function GenerateSummaryModal({ open, onClose, onConfirm }: GenerateSumma
           border: "1px solid var(--border)",
           background: "var(--surface)",
           boxShadow: "var(--panel-shadow)",
+          backdropFilter: "blur(20px) saturate(140%)",
+          WebkitBackdropFilter: "blur(20px) saturate(140%)",
         }}
       >
         {/* Header */}

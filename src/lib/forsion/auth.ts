@@ -138,5 +138,9 @@ export function useAuth() {
 // ── Open account center ──────────────────────────────────────────────
 
 export function openAccountCenter() {
-  window.open(`${FORSION_API_URL}/account`, "_blank");
+  const token = getToken();
+  const url = token
+    ? `${FORSION_API_URL}/account?token=${encodeURIComponent(token)}`
+    : `${FORSION_API_URL}/account`;
+  window.open(url, "_blank");
 }

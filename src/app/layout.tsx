@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthGuard } from "@/components/layout/auth-guard";
+import { AnalysisQueueProvider } from "@/lib/analysis-queue-context";
 
 export const metadata: Metadata = {
   title: "Bluebird Folder",
@@ -20,7 +21,9 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <AuthGuard>
-            {children}
+            <AnalysisQueueProvider>
+              {children}
+            </AnalysisQueueProvider>
           </AuthGuard>
         </ThemeProvider>
       </body>

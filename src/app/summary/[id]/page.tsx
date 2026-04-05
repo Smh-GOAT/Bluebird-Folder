@@ -1,4 +1,4 @@
-import { SummaryShell } from "@/components/summary/summary-shell";
+import { redirect } from "next/navigation";
 
 interface SummaryPageProps {
   params: Promise<{ id: string }>;
@@ -6,5 +6,5 @@ interface SummaryPageProps {
 
 export default async function SummaryPage({ params }: SummaryPageProps) {
   const { id } = await params;
-  return <SummaryShell summaryId={id} />;
+  redirect(`/?selected=${encodeURIComponent(id)}`);
 }

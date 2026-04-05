@@ -126,5 +126,9 @@ export async function cleanupDownloaderArtifacts(workDir: string) {
   if (!workDir) {
     return;
   }
-  await fs.rm(workDir, { recursive: true, force: true });
+  try {
+    await fs.rm(workDir, { recursive: true, force: true });
+  } catch (error) {
+    console.warn(`[cleanup] failed to remove ${workDir}:`, error);
+  }
 }
